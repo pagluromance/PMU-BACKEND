@@ -1,0 +1,41 @@
+services:
+  # ----------------------------------------------------------------------------
+  # Option 1: Node.js PMU Server (InfluxDB + Socket.IO) [Default]
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: pmu-backend
+    runtime: node
+    plan: free
+    region: oregon # or frankfurt, singapore, ohio
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: DEVICE_API_KEY
+        sync: false
+      - key: INFLUX_URL
+        sync: false
+      - key: INFLUX_TOKEN
+        sync: false
+      - key: INFLUX_ORG
+        sync: false
+      - key: INFLUX_BUCKET
+        value: pmu_data
+
+  # ----------------------------------------------------------------------------
+  # Option 2: Python FastAPI PMU Server (Uncomment if deploying Python instead)
+  # ----------------------------------------------------------------------------
+  # - type: web
+  #   name: pmu-backend-python
+  #   runtime: python
+  #   plan: free
+  #   buildCommand: pip install -r requirements.txt
+  #   startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+  #   healthCheckPath: /api/health
+  #   envVars:
+  #     - key: DEVICE_API_KEY
+  #       sync: false
+  #     - key: DATABASE_URL
+  #       value: sqlite:///./pmu_data.db
