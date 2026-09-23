@@ -1,0 +1,22 @@
+# Set default behavior to automatically normalize line endings to LF
+* text=auto eol=lf
+
+# Explicitly declare text files
+*.js text eol=lf
+*.json text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.env.example text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+
+# Declare binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.db binary
+*.sqlite binary

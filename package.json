@@ -1,0 +1,18 @@
+{
+  "name": "pmu-backend",
+  "version": "1.0.0",
+  "description": "Backend server for the synchrophasor (PMU) project: receives readings from PMU devices over HTTP and stores them in InfluxDB, and pushes live updates to a dashboard.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node --check server.js src/db.js src/routes.js"
+  },
+  "dependencies": {
+    "@influxdata/influxdb-client": "^1.35.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  }
+}
