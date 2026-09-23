@@ -9,7 +9,7 @@ services:
     region: oregon # or frankfurt, singapore, ohio
     buildCommand: npm install
     startCommand: node server.js
-    healthCheckPath: /
+    healthCheckPath: /health
     envVars:
       - key: PORT
         value: 10000

@@ -3,6 +3,7 @@ const express = require('express');
 const http = require('http');
 const cors = require('cors');
 const { Server } = require('socket.io');
+const path = require('path');
 const createRouter = require('./src/routes');
 
 const app = express();
@@ -16,9 +17,10 @@ const io = new Server(server, {
 
 app.use(cors());
 app.use(express.json()); // lets us read JSON bodies sent by the PMU devices
+app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/', (req, res) => {
-  res.send('PMU backend is running.');
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', message: 'PMU backend is running.' });
 });
 
 app.use('/api', createRouter(io));

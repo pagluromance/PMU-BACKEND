@@ -1,0 +1,844 @@
+/* ==============================================================================
+   SCADA PMU Engineering Dashboard Styles
+   ============================================================================== */
+
+:root {
+  --bg-base: #070b14;
+  --bg-surface: #0e1626;
+  --bg-surface-elevated: #142036;
+  --bg-card: #0d1524;
+  --bg-card-stale: #161822;
+  --border-subtle: #1e293b;
+  --border-highlight: #2c3e5a;
+  
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  
+  /* SCADA Semantic Colors */
+  --color-green: #10b981;
+  --color-green-glow: rgba(16, 185, 129, 0.2);
+  --color-amber: #f59e0b;
+  --color-amber-glow: rgba(245, 158, 11, 0.2);
+  --color-red: #ef4444;
+  --color-red-glow: rgba(239, 68, 68, 0.2);
+  --color-cyan: #06b6d4;
+  --color-cyan-glow: rgba(6, 182, 212, 0.2);
+  --color-blue: #3b82f6;
+  --color-purple: #8b5cf6;
+  
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Roboto Mono', monospace;
+  
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(6, 182, 212, 0.05) 0%, transparent 60%),
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 100% 100%, 40px 40px, 40px 40px;
+}
+
+/* Monospace Tabular Figures */
+.mono {
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum' 1;
+}
+
+/* -----------------------------------------------------------------------------
+   Header & Navigation
+   ----------------------------------------------------------------------------- */
+.scada-header {
+  background: rgba(14, 22, 38, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 12px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-icon {
+  width: 38px;
+  height: 38px;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(59, 130, 246, 0.2));
+  border: 1px solid var(--color-cyan);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-cyan);
+}
+
+.brand-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-title .badge {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  background: rgba(6, 182, 212, 0.15);
+  color: var(--color-cyan);
+  border: 1px solid rgba(6, 182, 212, 0.4);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.05em;
+}
+
+.brand-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.controls-section {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Control Pills */
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.control-group select {
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+}
+
+.control-group select option {
+  background: var(--bg-surface);
+  color: var(--text-main);
+}
+
+/* Connection Status Badge */
+.connection-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid var(--border-subtle);
+  transition: var(--transition);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--text-dim);
+  display: inline-block;
+  position: relative;
+}
+
+.status-dot.connected {
+  background-color: var(--color-green);
+  box-shadow: 0 0 10px var(--color-green);
+}
+
+.status-dot.connected::after {
+  content: '';
+  position: absolute;
+  top: -2px; left: -2px; right: -2px; bottom: -2px;
+  border-radius: 50%;
+  border: 1px solid var(--color-green);
+  animation: pulse 2s infinite;
+}
+
+.status-dot.reconnecting {
+  background-color: var(--color-amber);
+  box-shadow: 0 0 10px var(--color-amber);
+}
+
+.status-dot.error {
+  background-color: var(--color-red);
+  box-shadow: 0 0 10px var(--color-red);
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* Simulation Button */
+.btn-sim {
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  color: #c4b5fd;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--transition);
+}
+
+.btn-sim:hover {
+  background: rgba(139, 92, 246, 0.25);
+  border-color: #a78bfa;
+}
+
+.btn-sim.active {
+  background: #7c3aed;
+  color: #fff;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 12px rgba(124, 58, 237, 0.4);
+}
+
+/* -----------------------------------------------------------------------------
+   Cold Start Notification Banner
+   ----------------------------------------------------------------------------- */
+.cold-start-banner {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.15), rgba(59, 130, 246, 0.15));
+  border-bottom: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 10px 24px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.cold-start-content {
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cold-start-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(245, 158, 11, 0.3);
+  border-top-color: var(--color-amber);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* -----------------------------------------------------------------------------
+   Main Grid Layout
+   ----------------------------------------------------------------------------- */
+.dashboard-main {
+  flex: 1;
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.summary-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(14, 22, 38, 0.5);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.pmu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 20px;
+}
+
+@media (min-width: 1200px) {
+  .pmu-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   PMU Card Components
+   ----------------------------------------------------------------------------- */
+.pmu-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.pmu-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-cyan), var(--color-blue));
+  opacity: 0.8;
+}
+
+.pmu-card:hover {
+  border-color: var(--border-highlight);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+}
+
+/* Stale & Offline States */
+.pmu-card.is-stale {
+  background: var(--bg-card-stale);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.pmu-card.is-stale::before {
+  background: var(--color-amber);
+}
+
+.pmu-card.is-offline {
+  border-color: rgba(239, 68, 68, 0.3);
+  opacity: 0.85;
+}
+
+.pmu-card.is-offline::before {
+  background: var(--color-red);
+}
+
+/* Card Header */
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pmu-id-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pmu-id {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.05em;
+}
+
+.station-name {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.stale-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-amber);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.last-updated {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.last-updated-val {
+  font-weight: 600;
+}
+
+.last-updated.stale-text .last-updated-val {
+  color: var(--color-amber);
+}
+
+/* Frequency Hero Display */
+.freq-hero {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.freq-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.freq-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.freq-value-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.freq-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-cyan);
+  line-height: 1.1;
+  text-shadow: 0 0 20px var(--color-cyan-glow);
+}
+
+.freq-unit {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.freq-delta {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--color-green);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.freq-delta.warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-amber);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.freq-delta.alarm {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-red);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* Measurements Dual Column (Voltage, Current, Power) */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.metric-cell {
+  background: rgba(14, 22, 38, 0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.metric-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.metric-angle {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.metric-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.metric-val-unit {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-left: 2px;
+}
+
+/* Power Strip (P, Q, S, PF) */
+.power-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  background: rgba(14, 22, 38, 0.4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.power-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.power-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.power-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+/* Status Badges */
+.status-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.badge-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge-pill.ok {
+  color: var(--color-green);
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.badge-pill.warning {
+  color: var(--color-amber);
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.badge-pill.fail {
+  color: var(--color-red);
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Card Chart Container */
+.card-chart-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chart-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.range-pills {
+  display: flex;
+  gap: 4px;
+}
+
+.range-btn {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.range-btn:hover {
+  background: var(--bg-surface-elevated);
+  color: #fff;
+}
+
+.range-btn.active {
+  background: rgba(6, 182, 212, 0.2);
+  border-color: var(--color-cyan);
+  color: var(--color-cyan);
+}
+
+.canvas-container {
+  height: 110px;
+  position: relative;
+  background: rgba(7, 11, 20, 0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.canvas-container canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Card Footer */
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 12px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.btn-details {
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  color: var(--color-cyan);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-details:hover {
+  background: rgba(6, 182, 212, 0.2);
+  border-color: var(--color-cyan);
+}
+
+/* -----------------------------------------------------------------------------
+   Details Modal Dialog
+   ----------------------------------------------------------------------------- */
+dialog.scada-modal {
+  margin: auto;
+  padding: 0;
+  background: var(--bg-surface);
+  color: var(--text-main);
+  border: 1px solid var(--border-highlight);
+  border-radius: var(--radius-lg);
+  max-width: 900px;
+  width: 92vw;
+  max-height: 90vh;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85);
+  outline: none;
+}
+
+dialog.scada-modal::backdrop {
+  background: rgba(3, 7, 18, 0.75);
+  backdrop-filter: blur(6px);
+}
+
+.modal-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-surface-elevated);
+}
+
+.modal-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 20px;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  max-height: calc(90vh - 70px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.modal-charts-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.modal-chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+
+.modal-chart-canvas-wrap {
+  height: 160px;
+  margin-top: 8px;
+  background: rgba(7, 11, 20, 0.8);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+/* Raw Frame Inspector */
+.raw-frame-box {
+  background: #050811;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #a5b4fc;
+  overflow-x: auto;
+  max-height: 200px;
+}
+
+/* Skeleton Loading Animation */
+.skeleton {
+  background: linear-gradient(90deg, #0d1524 25%, #162238 50%, #0d1524 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Tooltip */
+.chart-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid var(--border-highlight);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #fff;
+  z-index: 50;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  display: none;
+}
