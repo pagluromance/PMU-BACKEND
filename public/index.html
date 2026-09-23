@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Synchrophasor PMU Telemetry Monitor | SCADA WAMS</title>
-  <meta name="description" content="Real-time engineering SCADA dashboard monitoring 4 PMU synchrophasor devices (IEEE C37.118) across the smart grid network.">
+  <title>WAMS Synchrophasor Monitor | IEEE C37.118 PMU Dashboard</title>
+  <meta name="description" content="Wide-Area Monitoring System — real-time SCADA dashboard for 4 synchrophasor PMU devices per IEEE C37.118.2-2011.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,183 +13,244 @@
 <body>
 
   <!-- =========================================================================
-       SCADA Top Header & Control Center
+       SYSTEM TOOLBAR (Control Room Grade)
        ========================================================================= -->
-  <header class="scada-header" role="banner">
-    <div class="header-container">
-      
-      <div class="brand-section">
-        <div class="brand-icon" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <header class="sys-banner" role="banner">
+    <div class="banner-left">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
           </svg>
+          WAMS&nbsp;<span style="color:var(--text-secondary);font-weight:400;">SYNCHROPHASOR MONITOR</span>
         </div>
-        <div>
-          <div class="brand-title">
-            <span>SYNCHROPHASOR MONITOR</span>
-            <span class="badge">IEEE C37.118</span>
-          </div>
-          <div class="brand-subtitle">DST FIST MicroSmartGrid &bull; Wide-Area Monitoring System (WAMS)</div>
-        </div>
+        <span class="brand-org">IEEE C37.118.2 &bull; DST-FIST MicroSmartGrid</span>
       </div>
-
-      <div class="controls-section">
-        <!-- Live Connection Status -->
-        <div id="connection-badge" class="connection-badge">
-          <span id="status-dot" class="status-dot"></span>
-          <span id="status-text" class="mono">INITIALIZING</span>
-        </div>
-
-        <!-- Staleness Threshold Setting -->
-        <div class="control-group" title="Time without packets before a PMU is marked stale/offline">
-          <label for="stale-threshold-select">Stale Threshold:</label>
-          <select id="stale-threshold-select">
-            <option value="15">15s</option>
-            <option value="30" selected>30s (Default)</option>
-            <option value="60">60s</option>
-            <option value="120">120s</option>
-          </select>
-        </div>
-
-        <!-- Backend Target URL Switcher -->
-        <div class="control-group" title="Select API backend endpoint">
-          <label for="backend-target-select">API Source:</label>
-          <select id="backend-target-select">
-            <option value="auto" selected>Auto-detect Origin</option>
-            <option value="https://pmu-backend-ury8.onrender.com">Render Cloud</option>
-            <option value="http://localhost:3000">Localhost (3000)</option>
-          </select>
-        </div>
-
-        <!-- Hardware Simulator Toggle -->
-        <button id="btn-toggle-sim" class="btn-sim" title="Generate simulated telemetry frames for demonstration and testing">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="5 3 19 12 5 21 5 3"></polygon>
-          </svg>
-          <span>Demo Feed</span>
-        </button>
+      <div class="banner-sep"></div>
+      <div class="sys-clock">UTC <span id="utc-time" class="mono">--:--:--</span></div>
+      <div class="banner-sep"></div>
+      <div id="alarm-badge" class="alarm-badge no-alarms" title="Active alarms">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <span id="alarm-count">0 ALARMS</span>
       </div>
+    </div>
 
+    <div class="banner-right">
+      <div class="ref-label">REF BUS: <strong>PMU_A</strong></div>
+      <div id="conn-pill" class="conn-pill">
+        <span id="conn-dot" class="conn-dot"></span>
+        <span id="conn-text" class="mono">INITIALIZING</span>
+      </div>
+      <select id="stale-threshold-select" class="stale-select" title="Mark PMU stale after N seconds without packets">
+        <option value="15">Stale: 15s</option>
+        <option value="30" selected>Stale: 30s</option>
+        <option value="60">Stale: 60s</option>
+        <option value="120">Stale: 120s</option>
+      </select>
+      <select id="backend-target-select" class="stale-select" title="API backend">
+        <option value="auto" selected>API: Auto</option>
+        <option value="https://pmu-backend-ury8.onrender.com">Render Cloud</option>
+        <option value="http://localhost:3000">Localhost</option>
+      </select>
+      <button id="btn-toggle-sim" class="ctrl-btn" title="Start demo simulation">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        <span>Demo Feed</span>
+      </button>
     </div>
   </header>
 
-  <!-- =========================================================================
-       Cold-Start Wake-up Banner (Render Free Instance)
-       ========================================================================= -->
-  <div id="cold-start-banner" class="cold-start-banner" style="display: none;" role="status" aria-live="polite">
-    <div class="cold-start-content">
-      <div class="cold-start-spinner"></div>
-      <div id="cold-start-msg">
-        <strong>Connecting to cloud service:</strong> Waking up Render instance (free tier may take 30–50s on initial load)... Retrying automatically (<span id="retry-counter">1</span>).
-      </div>
+  <!-- Cold-start banner -->
+  <div id="cold-banner" class="cold-banner" role="status" aria-live="polite">
+    <div class="cold-spinner"></div>
+    <span id="cold-msg"><strong>Waking up backend service</strong> — Render free tier may require 30–50 s cold start. Retrying (<span id="retry-counter">1</span>)…</span>
+  </div>
+
+  <!-- Secondary PDC stats bar -->
+  <div class="status-bar" role="complementary" aria-label="System status strip">
+    <div class="stat-item"><span class="stat-label">ONLINE</span><span id="stat-online" class="stat-val ok mono">0 / 4</span></div>
+    <div class="stat-item"><span class="stat-label">NOMINAL</span><span class="stat-val mono">50.000 Hz</span></div>
+    <div class="stat-item"><span class="stat-label">BASE</span><span class="stat-val mono">230 V</span></div>
+    <div class="stat-item"><span class="stat-label">LAST FRAME</span><span id="stat-last-frame" class="stat-val mono">—</span></div>
+    <div class="stat-item"><span class="stat-label">FRAME RATE</span><span id="stat-rate" class="stat-val mono">—</span></div>
+    <div class="stat-item" style="gap:6px;">
+      <span class="stat-label">PMU</span>
+      <span class="pmu-dot" id="dot-PMU_A" style="background:var(--pmu-a);" title="PMU_A"></span>
+      <span class="pmu-dot" id="dot-PMU_B" style="background:var(--pmu-b);" title="PMU_B"></span>
+      <span class="pmu-dot" id="dot-PMU_C" style="background:var(--pmu-c);" title="PMU_C"></span>
+      <span class="pmu-dot" id="dot-PMU_D" style="background:var(--pmu-d);" title="PMU_D"></span>
     </div>
   </div>
 
   <!-- =========================================================================
-       Dashboard Body & PMU Cards Grid
+       MAIN LAYOUT — Left Sidebar + Right Content
        ========================================================================= -->
-  <main class="dashboard-main" role="main">
+  <div class="main-layout" role="main">
 
-    <div class="summary-strip">
-      <div>
-        <span>Active Devices: </span>
-        <strong id="summary-online-count" class="mono" style="color: var(--color-green);">0 / 4 Online</strong>
-      </div>
-      <div>
-        <span>Nominal Grid Base: </span>
-        <strong class="mono">50.000 Hz</strong>
-      </div>
-      <div>
-        <span>Last Packet: </span>
-        <span id="summary-last-time" class="mono text-muted">Awaiting telemetry...</span>
-      </div>
-    </div>
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar" aria-label="PMU network index and analytics">
+      <section class="sidebar-section">
+        <div class="sidebar-section-title">PMU Network Index</div>
+        <div id="pmu-index"><!-- filled by app.js --></div>
+      </section>
 
-    <!-- 4-Card Responsive Grid -->
-    <div id="pmu-grid" class="pmu-grid" aria-label="PMU telemetry cards grid">
-      <!-- Populated dynamically via app.js -->
-    </div>
+      <section class="sidebar-section">
+        <div class="sidebar-section-title">Angular Separation vs PMU_A (Reference)</div>
+        <table class="angle-table" id="angle-sep-table" aria-label="Angular separation from reference bus">
+          <thead><tr><th>PMU</th><th>Δθ_V (°)</th><th>Δθ_I (°)</th><th>Δf (Hz)</th></tr></thead>
+          <tbody><!-- filled by app.js --></tbody>
+        </table>
+      </section>
 
-  </main>
-
-  <!-- =========================================================================
-       Expanded Telemetry Modal Dialog
-       ========================================================================= -->
-  <dialog id="scada-modal" class="scada-modal" aria-labelledby="modal-title">
-    <div class="modal-header">
-      <div class="card-title-group">
-        <h2 id="modal-title" class="mono">PMU DETAILS</h2>
-        <span id="modal-station" class="station-name">SUBSTATION</span>
-      </div>
-      <button id="modal-close-btn" class="modal-close-btn" aria-label="Close modal">&times;</button>
-    </div>
-
-    <div class="modal-body">
-      <!-- Modal Navigation / Range -->
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span class="mono" id="modal-timestamp-label" style="font-size: 12px; color: var(--text-dim);">Frame Timestamp</span>
-        <div class="range-pills" id="modal-range-pills">
-          <button class="range-btn active" data-range="-15m">15m</button>
-          <button class="range-btn" data-range="-1h">1h</button>
-          <button class="range-btn" data-range="-6h">6h</button>
-          <button class="range-btn" data-range="-24h">24h</button>
-          <button class="range-btn" data-range="-7d">7d</button>
+      <section class="sidebar-section" style="flex:1;min-height:0;">
+        <div class="sidebar-section-title">Alarm &amp; Event Log</div>
+        <div class="alarm-log" id="alarm-log" role="log" aria-live="polite">
+          <div class="alarm-entry level-info">
+            <span class="alarm-time" id="alarm-init-time">--:--:--</span>
+            <span class="alarm-msg">System initialized. Awaiting telemetry.</span>
+          </div>
         </div>
+      </section>
+    </aside>
+
+    <!-- CONTENT AREA -->
+    <div class="content-area">
+
+      <!-- 2×2 PMU Detail Cards -->
+      <div id="pmu-cards-grid" class="pmu-cards-grid" aria-label="PMU synchrophasor detail cards">
+        <!-- filled by app.js -->
       </div>
 
-      <!-- Modal Charts -->
-      <div class="modal-charts-grid">
-        
-        <!-- Voltage & Current Magnitudes -->
-        <div class="modal-chart-card">
-          <div class="chart-header">
-            <span class="chart-title">Voltage & Current Magnitudes</span>
-            <div style="display: flex; gap: 12px; font-size: 11px;">
-              <span style="color: var(--color-cyan); font-weight: 600;">&bull; Voltage (V RMS)</span>
-              <span style="color: var(--color-amber); font-weight: 600;">&bull; Current (A RMS)</span>
+      <!-- BOTTOM PANELS -->
+      <div class="bottom-panels">
+        <section class="global-freq-panel">
+          <div class="panel-header">
+            <span class="panel-title">Global Frequency — All PMUs Overlay</span>
+            <div class="range-pills" id="global-freq-pills">
+              <button class="rpill active" data-range="-15m">15m</button>
+              <button class="rpill" data-range="-1h">1h</button>
+              <button class="rpill" data-range="-6h">6h</button>
+              <button class="rpill" data-range="-24h">24h</button>
             </div>
           </div>
-          <div class="modal-chart-canvas-wrap">
-            <canvas id="modal-chart-vi"></canvas>
+          <div class="panel-canvas-wrap"><canvas id="global-freq-canvas"></canvas></div>
+          <div class="pmu-legend" aria-label="PMU color legend">
+            <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-a)"></span>PMU_A</span>
+            <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-b)"></span>PMU_B</span>
+            <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-c)"></span>PMU_C</span>
+            <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-d)"></span>PMU_D</span>
           </div>
-        </div>
+        </section>
 
-        <!-- Phase Angle Difference (V - I) -->
-        <div class="modal-chart-card">
-          <div class="chart-header">
-            <span class="chart-title">Phase Angle Difference (&theta;<sub>V</sub> &minus; &theta;<sub>I</sub>)</span>
-            <span id="modal-angle-delta-val" class="mono" style="font-size: 12px; color: var(--color-purple); font-weight: 600;">0.00&deg;</span>
+        <section class="global-angle-panel">
+          <div class="panel-header">
+            <span class="panel-title">Voltage Angle Separation Δθ_V (vs PMU_A)</span>
           </div>
-          <div class="modal-chart-canvas-wrap">
-            <canvas id="modal-chart-angle"></canvas>
+          <div class="panel-canvas-wrap"><canvas id="global-angle-canvas"></canvas></div>
+          <div class="pmu-legend">
+            <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-b)"></span>PMU_B</span>
+            <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-c)"></span>PMU_C</span>
+            <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-d)"></span>PMU_D</span>
           </div>
-        </div>
-
-        <!-- ROCOF -->
-        <div class="modal-chart-card">
-          <div class="chart-header">
-            <span class="chart-title">Rate of Change of Frequency (ROCOF)</span>
-            <span id="modal-rocof-val" class="mono" style="font-size: 12px; color: #ec4899; font-weight: 600;">0.00 Hz/s</span>
-          </div>
-          <div class="modal-chart-canvas-wrap">
-            <canvas id="modal-chart-rocof"></canvas>
-          </div>
-        </div>
-
+        </section>
       </div>
 
-      <!-- Raw IEEE C37.118 Frame Inspector -->
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       EXPANDED PMU INSPECTOR DIALOG (IEEE C37.118 Frame Details)
+       ========================================================================= -->
+  <dialog id="detail-modal" aria-labelledby="modal-h2">
+    <div class="modal-topbar">
+      <h2 id="modal-h2" class="mono">PMU TELEMETRY INSPECTOR</h2>
+      <button id="modal-close" class="modal-close" aria-label="Close inspector">&#x2715;</button>
+    </div>
+
+    <div class="modal-content">
+      <!-- Phasor diagram + vital blocks -->
+      <div class="modal-top-row">
+        <div class="modal-phasor-panel">
+          <span class="phasor-title">Phasor Diagram</span>
+          <div class="modal-phasor-canvas"><canvas id="modal-phasor-canvas"></canvas></div>
+          <div class="phasor-legend">
+            <div class="phasor-legend-item"><span class="phasor-legend-dot" style="background:var(--cyan)"></span><span>Voltage (V)</span></div>
+            <div class="phasor-legend-item"><span class="phasor-legend-dot" style="background:var(--amber)"></span><span>Current (I)</span></div>
+          </div>
+        </div>
+        <div class="modal-vitals">
+          <div class="vital-block">
+            <div class="v-label">Frequency</div>
+            <div class="v-val mono" id="mv-freq">—</div>
+            <div class="v-sub" id="mv-rocof">ROCOF: — Hz/s</div>
+          </div>
+          <div class="vital-block">
+            <div class="v-label">Voltage RMS</div>
+            <div class="v-val mono" id="mv-vmag">—</div>
+            <div class="v-sub" id="mv-vangle">θ_V: —°</div>
+          </div>
+          <div class="vital-block">
+            <div class="v-label">Current RMS</div>
+            <div class="v-val mono" id="mv-imag">—</div>
+            <div class="v-sub" id="mv-iangle">θ_I: —°</div>
+          </div>
+          <div class="vital-block">
+            <div class="v-label">Active Power P</div>
+            <div class="v-val mono" id="mv-p">—</div>
+            <div class="v-sub">Real Power</div>
+          </div>
+          <div class="vital-block">
+            <div class="v-label">Reactive Power Q</div>
+            <div class="v-val mono" id="mv-q">—</div>
+            <div class="v-sub">Reactive Power</div>
+          </div>
+          <div class="vital-block">
+            <div class="v-label">Power Factor</div>
+            <div class="v-val mono" id="mv-pf">—</div>
+            <div class="v-sub" id="mv-s">S: — kVA</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Range selector -->
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span class="mono dim" id="modal-ts" style="font-size:11px;">Frame Timestamp: —</span>
+        <div class="range-pills" id="modal-range-pills">
+          <button class="rpill active" data-range="-15m">15m</button>
+          <button class="rpill" data-range="-1h">1h</button>
+          <button class="rpill" data-range="-6h">6h</button>
+          <button class="rpill" data-range="-24h">24h</button>
+          <button class="rpill" data-range="-7d">7d</button>
+        </div>
+      </div>
+
+      <!-- 2×2 chart grid -->
+      <div class="modal-charts-row">
+        <div class="modal-chart-block">
+          <div class="block-title">Voltage &amp; Current Magnitudes</div>
+          <div class="modal-chart-wrap"><canvas id="modal-chart-vi"></canvas></div>
+        </div>
+        <div class="modal-chart-block">
+          <div class="block-title">Phase Angle Δ (&theta;<sub>V</sub>&minus;&theta;<sub>I</sub>)</div>
+          <div class="modal-chart-wrap"><canvas id="modal-chart-angle"></canvas></div>
+        </div>
+        <div class="modal-chart-block">
+          <div class="block-title">ROCOF (Hz/s)</div>
+          <div class="modal-chart-wrap"><canvas id="modal-chart-rocof"></canvas></div>
+        </div>
+        <div class="modal-chart-block">
+          <div class="block-title">Frequency Trend (Hz)</div>
+          <div class="modal-chart-wrap"><canvas id="modal-chart-freq"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Raw frame JSON -->
       <div>
-        <div class="chart-header" style="margin-bottom: 6px;">
-          <span class="chart-title">IEEE C37.118 Frame Telemetry Inspector</span>
-        </div>
-        <pre id="modal-raw-json" class="raw-frame-box">Select a PMU card to inspect telemetry frame.</pre>
+        <div class="block-title" style="margin-bottom:6px;">IEEE C37.118 Frame Inspector</div>
+        <pre id="modal-raw-json" class="raw-frame">Select a PMU to inspect.</pre>
       </div>
-
     </div>
   </dialog>
 
-  <!-- Load Socket.IO Client with fallback -->
   <script src="/socket.io/socket.io.js" onerror="this.onerror=null;this.src='https://cdn.socket.io/4.7.5/socket.io.min.js';"></script>
   <script src="chart.js"></script>
   <script src="app.js"></script>
