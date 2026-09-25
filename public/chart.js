@@ -1,17 +1,48 @@
 /**
  * Synchrophasor Canvas Charting Engine
  * High performance, zero dependency, Retina-crisp rendering
+ * Modern SaaS / Grafana engineering analytics aesthetic
  *
  * Includes:
- *  - SynchroChart.drawFrequency()      — frequency trend with 50 Hz nominal line
- *  - SynchroChart.drawDualSeries()     — V & I magnitudes on dual Y-axes
+ *  - SynchroChart.drawFrequency()          — frequency trend with 50 Hz nominal line
+ *  - SynchroChart.drawDualSeries()         — V & I magnitudes on dual Y-axes
  *  - SynchroChart.drawZeroCenteredSeries() — ROCOF / angle delta centered at 0
- *  - SynchroChart.drawPhasor()         — IEEE C37.118 polar phasor diagram (V & I vectors)
- *  - SynchroChart.drawMultiFreq()      — global overlay of up to 4 PMU frequency series
- *  - SynchroChart.drawAngleSeparation()— angle separation histories for B, C, D vs A
+ *  - SynchroChart.drawPhasor()             — IEEE C37.118 polar phasor diagram (V & I vectors)
+ *  - SynchroChart.drawMultiFreq()          — global overlay of up to 4 PMU frequency series
+ *  - SynchroChart.drawAngleSeparation()    — angle separation histories for B, C, D vs A
  */
 
 class SynchroChart {
+  /**
+   * Returns palette based on current active theme (light or dark).
+   */
+  static getTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    return {
+      isDark,
+      grid: isDark ? '#1F2937' : '#F1F5F9',
+      border: isDark ? '#374151' : '#E2E8F0',
+      text: isDark ? '#9CA3AF' : '#64748B',
+      textMuted: isDark ? '#6B7280' : '#94A3B8',
+      nominalLine: isDark ? 'rgba(96, 165, 250, 0.5)' : 'rgba(37, 99, 235, 0.45)',
+      nominalText: isDark ? '#60A5FA' : '#2563EB',
+      zeroLine: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(15, 23, 42, 0.15)',
+      // Phasor
+      phasorBg: isDark ? '#111827' : '#F8FAFC',
+      phasorOuter: isDark ? '#374151' : '#CBD5E1',
+      phasorGuides: isDark ? '#1F2937' : '#E2E8F0',
+      phasorAxes: isDark ? '#374151' : '#E2E8F0',
+      phasorText: isDark ? '#9CA3AF' : '#64748B',
+      phasorV: isDark ? '#3B82F6' : '#2563EB',
+      phasorI: isDark ? '#F59E0B' : '#D97706',
+      phasorCenter: isDark ? '#E5E7EB' : '#475569',
+      // Frequency line
+      freqStroke: isDark ? '#3B82F6' : '#2563EB',
+      freqGradientTop: isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(37, 99, 235, 0.08)',
+      freqGradientBottom: 'rgba(37, 99, 235, 0.0)',
+    };
+  }
+
   /**
    * Prepares a canvas for high-DPI crisp rendering.
    */
@@ -33,8 +64,8 @@ class SynchroChart {
   }
 
   /**
-   * Draws a IEEE C37.118 phasor polar diagram.
-   * Voltage vector (cyan) and Current vector (amber) plotted relative to 0° reference.
+   * Draws a clean, minimal IEEE C37.118 phasor polar diagram.
+   * Voltage vector (blue) and Current vector (amber) plotted relative to 0° reference.
    *
    * @param {HTMLCanvasElement} canvas
    * @param {number} vMag   - Voltage magnitude (V RMS)
@@ -45,142 +76,135 @@ class SynchroChart {
    */
   static drawPhasor(canvas, vMag, vAngle, iMag, iAngle, options = {}) {
     const { ctx, width, height } = this.setupCanvas(canvas);
+    const theme = this.getTheme();
     ctx.clearRect(0, 0, width, height);
 
     const cx = width / 2;
     const cy = height / 2;
-    const radius = Math.min(cx, cy) * 0.82;
+    const radius = Math.min(cx, cy) * 0.80;
 
-    // Background
-    ctx.fillStyle = 'rgba(5, 10, 20, 0.8)';
+    // Subtle polar background
+    ctx.fillStyle = theme.phasorBg;
     ctx.beginPath();
-    ctx.arc(cx, cy, radius + 10, 0, Math.PI * 2);
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.fill();
 
-    // Outer ring
-    ctx.strokeStyle = '#1e293b';
+    // Concentric guide rings (at 33% and 66% of radius)
+    [0.33, 0.66].forEach(f => {
+      ctx.strokeStyle = theme.phasorGuides;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius * f, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    // Outer circle
+    ctx.strokeStyle = theme.phasorOuter;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Concentric guide rings (at 25%, 50%, 75% of radius)
-    [0.25, 0.5, 0.75].forEach(f => {
-      ctx.strokeStyle = '#1a2a42';
-      ctx.lineWidth = 0.5;
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius * f, 0, Math.PI * 2);
-      ctx.stroke();
-    });
-
-    // Crosshairs (cardinal axes)
-    ctx.strokeStyle = '#1e293b';
-    ctx.lineWidth = 0.5;
+    // Cardinal axes (crosshairs)
+    ctx.strokeStyle = theme.phasorAxes;
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(cx - radius, cy); ctx.lineTo(cx + radius, cy);
     ctx.moveTo(cx, cy - radius); ctx.lineTo(cx, cy + radius);
     ctx.stroke();
 
-    // Axis labels (0°, 90°, 180°, 270°)
-    ctx.fillStyle = '#556f8a';
-    ctx.font = `9px 'JetBrains Mono', monospace`;
+    // Cardinal angle labels (0°, 90°, 180°, 270°)
+    ctx.fillStyle = theme.phasorText;
+    ctx.font = '9px "Inter", -apple-system, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('0°',    cx + radius + 7, cy + 3);
-    ctx.fillText('90°',   cx, cy - radius - 5);
-    ctx.fillText('180°',  cx - radius - 9, cy + 3);
-    ctx.fillText('270°',  cx, cy + radius + 9);
+    ctx.textBaseline = 'middle';
+    ctx.fillText('0°', cx + radius - 10, cy - 8);
+    ctx.fillText('90°', cx, cy - radius + 9);
+    ctx.fillText('180°', cx - radius + 14, cy - 8);
+    ctx.fillText('270°', cx, cy + radius - 9);
 
-    // Helper to convert angle→canvas (0°=right, CCW positive per IEEE 37.118)
+    // If no data
+    if (vMag == null && iMag == null) {
+      ctx.fillStyle = theme.textMuted;
+      ctx.font = '10px "Inter", -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Awaiting data', cx, cy);
+      return;
+    }
+
+    // Helper to convert angle -> canvas coordinates (0°=right, CCW positive per IEEE 37.118)
     const toRad = deg => -deg * Math.PI / 180;
 
-    // Normalize magnitudes for display (phasor lengths)
-    const maxMag = Math.max(vMag || 0, iMag || 0, 1);
-    const vLen = (vMag / maxMag) * radius;
-    const iLen = (iMag / maxMag) * radius;
+    // Normalize magnitudes for clean vector scale
+    const vLen = radius * 0.88;
+    const iLen = radius * 0.68;
 
-    // Draw Voltage phasor (cyan)
+    // Draw Voltage phasor (Solid blue)
     if (vMag != null && vAngle != null) {
       const vRad = toRad(vAngle);
       const vx = cx + vLen * Math.cos(vRad);
       const vy = cy + vLen * Math.sin(vRad);
 
-      // Glow effect
-      ctx.save();
-      ctx.shadowColor = '#06b6d4';
-      ctx.shadowBlur = 6;
-
-      ctx.strokeStyle = '#06b6d4';
+      ctx.strokeStyle = theme.phasorV;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.lineTo(vx, vy);
       ctx.stroke();
 
-      // Arrowhead
-      this._arrowHead(ctx, cx, cy, vx, vy, '#06b6d4', 7);
+      // Sharp arrowhead
+      this._arrowHead(ctx, cx, cy, vx, vy, theme.phasorV, 7);
 
       // Angle arc
-      ctx.strokeStyle = 'rgba(6, 182, 212, 0.3)';
+      ctx.strokeStyle = theme.phasorV;
       ctx.lineWidth = 1;
+      ctx.setLineDash([2, 2]);
       ctx.beginPath();
-      ctx.arc(cx, cy, radius * 0.18, 0, vRad < 0 ? vRad : -vRad, vAngle >= 0);
+      ctx.arc(cx, cy, radius * 0.22, 0, vRad < 0 ? vRad : -vRad, vAngle >= 0);
       ctx.stroke();
-
-      ctx.restore();
-
-      // Value label
-      ctx.fillStyle = '#06b6d4';
-      ctx.font = `bold 10px 'JetBrains Mono', monospace`;
-      ctx.textAlign = vx > cx ? 'left' : 'right';
-      ctx.fillText(`${vMag.toFixed(0)}V`, vx + (vx > cx ? 4 : -4), vy - 4);
+      ctx.setLineDash([]);
     }
 
-    // Draw Current phasor (amber)
+    // Draw Current phasor (Amber)
     if (iMag != null && iAngle != null) {
       const iRad = toRad(iAngle);
       const ix = cx + iLen * Math.cos(iRad);
       const iy = cy + iLen * Math.sin(iRad);
 
-      ctx.save();
-      ctx.shadowColor = '#f59e0b';
-      ctx.shadowBlur = 6;
-
-      ctx.strokeStyle = '#f59e0b';
+      ctx.strokeStyle = theme.phasorI;
       ctx.lineWidth = 2;
-      ctx.setLineDash([5, 3]);
+      ctx.setLineDash([4, 2]);
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.lineTo(ix, iy);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      this._arrowHead(ctx, cx, cy, ix, iy, '#f59e0b', 7);
-      ctx.restore();
-
-      ctx.fillStyle = '#f59e0b';
-      ctx.font = `bold 10px 'JetBrains Mono', monospace`;
-      ctx.textAlign = ix > cx ? 'left' : 'right';
-      ctx.fillText(`${iMag.toFixed(1)}A`, ix + (ix > cx ? 4 : -4), iy + 11);
+      this._arrowHead(ctx, cx, cy, ix, iy, theme.phasorI, 6);
     }
 
-    // Center dot
-    ctx.fillStyle = '#e8eef7';
+    // Center pivot dot
+    ctx.fillStyle = theme.phasorCenter;
     ctx.beginPath();
     ctx.arc(cx, cy, 3, 0, Math.PI * 2);
     ctx.fill();
 
-    // Angle difference annotation
-    if (vMag != null && iMag != null && vAngle != null && iAngle != null) {
+    // Delta phase annotation at bottom center
+    if (vAngle != null && iAngle != null) {
       const delta = (vAngle - iAngle).toFixed(1);
-      ctx.fillStyle = '#8ba4c0';
-      ctx.font = `9px 'JetBrains Mono', monospace`;
+      ctx.fillStyle = theme.text;
+      ctx.font = '10px "JetBrains Mono", monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(`Δθ = ${delta}°`, cx, cy + radius + 16);
+      ctx.textBaseline = 'top';
+      ctx.fillText(`Δθ = ${delta}°`, cx, cy + radius + 4);
     }
   }
 
   /**
-   * Draws an arrowhead on a canvas context.
+   * Draws a clean arrowhead on a canvas context.
    */
   static _arrowHead(ctx, fromX, fromY, toX, toY, color, size) {
     const angle = Math.atan2(toY - fromY, toX - fromX);
@@ -200,27 +224,29 @@ class SynchroChart {
   }
 
   /**
-   * Draws a frequency trend chart (nominal reference at 50.00 Hz).
+   * Draws a frequency trend sparkline/chart with 50.00 Hz nominal reference.
    * @param {HTMLCanvasElement} canvas
    * @param {Array<{time: string|number, value: number}>} points
    * @param {Object} options
    */
   static drawFrequency(canvas, points, options = {}) {
     const { ctx, width, height } = this.setupCanvas(canvas);
+    const theme = this.getTheme();
     ctx.clearRect(0, 0, width, height);
 
-    const padTop = 14;
-    const padBottom = 18;
+    const padTop = 10;
+    const padBottom = 16;
     const padLeft = 40;
-    const padRight = 14;
+    const padRight = 10;
     const plotW = width - padLeft - padRight;
     const plotH = height - padTop - padBottom;
 
     if (!points || points.length === 0) {
-      ctx.fillStyle = '#64748b';
-      ctx.font = '11px "JetBrains Mono", monospace';
+      ctx.fillStyle = theme.textMuted;
+      ctx.font = '11px "Inter", -apple-system, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(options.emptyText || 'Awaiting frequency telemetry...', width / 2, height / 2);
+      ctx.textBaseline = 'middle';
+      ctx.fillText(options.emptyText || 'Awaiting telemetry...', width / 2, height / 2);
       return;
     }
 
@@ -228,17 +254,17 @@ class SynchroChart {
     let minVal = Math.min(...vals);
     let maxVal = Math.max(...vals);
 
-    minVal = Math.min(minVal, 49.90);
-    maxVal = Math.max(maxVal, 50.10);
-    const margin = (maxVal - minVal) * 0.1 || 0.05;
+    minVal = Math.min(minVal, 49.92);
+    maxVal = Math.max(maxVal, 50.08);
+    const margin = (maxVal - minVal) * 0.12 || 0.04;
     minVal -= margin;
     maxVal += margin;
 
     const getY = val => padTop + plotH - ((val - minVal) / (maxVal - minVal)) * plotH;
     const getX = idx => padLeft + (idx / Math.max(1, points.length - 1)) * plotW;
 
-    // Grid lines
-    ctx.strokeStyle = '#1e293b';
+    // Background horizontal grid lines
+    ctx.strokeStyle = theme.grid;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(padLeft, padTop); ctx.lineTo(width - padRight, padTop);
@@ -248,28 +274,30 @@ class SynchroChart {
     // 50.00 Hz dashed nominal line
     const nominalY = getY(50.00);
     ctx.save();
-    ctx.setLineDash([4, 4]);
-    ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = theme.nominalLine;
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(padLeft, nominalY);
     ctx.lineTo(width - padRight, nominalY);
     ctx.stroke();
     ctx.restore();
 
-    // Labels
-    ctx.fillStyle = 'rgba(6, 182, 212, 0.7)';
+    // Y-axis labels
+    ctx.fillStyle = theme.nominalText;
     ctx.font = '9px "JetBrains Mono", monospace';
     ctx.textAlign = 'right';
-    ctx.fillText('50.00', padLeft - 4, nominalY + 3);
+    ctx.textBaseline = 'middle';
+    ctx.fillText('50.00', padLeft - 4, nominalY);
 
-    ctx.fillStyle = '#64748b';
-    ctx.fillText(maxVal.toFixed(2), padLeft - 4, padTop + 8);
-    ctx.fillText(minVal.toFixed(2), padLeft - 4, padTop + plotH);
+    ctx.fillStyle = theme.textMuted;
+    ctx.fillText(maxVal.toFixed(2), padLeft - 4, padTop + 4);
+    ctx.fillText(minVal.toFixed(2), padLeft - 4, padTop + plotH - 2);
 
-    // Gradient fill
+    // Subtle area fill
     const gradient = ctx.createLinearGradient(0, padTop, 0, padTop + plotH);
-    gradient.addColorStop(0, 'rgba(6, 182, 212, 0.25)');
-    gradient.addColorStop(1, 'rgba(6, 182, 212, 0.0)');
+    gradient.addColorStop(0, theme.freqGradientTop);
+    gradient.addColorStop(1, theme.freqGradientBottom);
 
     ctx.beginPath();
     ctx.moveTo(getX(0), getY(points[0].value));
@@ -288,27 +316,28 @@ class SynchroChart {
     for (let i = 1; i < points.length; i++) {
       ctx.lineTo(getX(i), getY(points[i].value));
     }
-    ctx.strokeStyle = '#06b6d4';
+    ctx.strokeStyle = theme.freqStroke;
     ctx.lineWidth = 1.75;
     ctx.stroke();
 
     // Latest point dot
     const lastX = getX(points.length - 1);
     const lastY = getY(points[points.length - 1].value);
-    ctx.fillStyle = '#06b6d4';
+    ctx.fillStyle = theme.freqStroke;
     ctx.beginPath();
     ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = theme.isDark ? '#111827' : '#FFFFFF';
+    ctx.lineWidth = 1.5;
     ctx.stroke();
   }
 
   /**
-   * Draws a multi-series chart (e.g. Voltage & Current on dual axes).
+   * Draws a multi-series chart (Voltage & Current on dual axes).
    */
   static drawDualSeries(canvas, seriesA, seriesB, labelA, labelB) {
     const { ctx, width, height } = this.setupCanvas(canvas);
+    const theme = this.getTheme();
     ctx.clearRect(0, 0, width, height);
 
     const padTop = 16, padBottom = 20, padLeft = 45, padRight = 45;
@@ -316,9 +345,10 @@ class SynchroChart {
     const plotH = height - padTop - padBottom;
 
     if (!seriesA || seriesA.length === 0) {
-      ctx.fillStyle = '#64748b';
-      ctx.font = '11px "JetBrains Mono", monospace';
+      ctx.fillStyle = theme.textMuted;
+      ctx.font = '11px "Inter", -apple-system, sans-serif';
       ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
       ctx.fillText('Awaiting waveform history...', width / 2, height / 2);
       return;
     }
@@ -335,37 +365,43 @@ class SynchroChart {
     const getYB = v => padTop + plotH - ((v - minB) / (maxB - minB || 1)) * plotH;
     const getX = (i, len) => padLeft + (i / Math.max(1, len - 1)) * plotW;
 
-    ctx.strokeStyle = '#1e293b';
+    // Grid bounding box
+    ctx.strokeStyle = theme.border;
     ctx.lineWidth = 1;
     ctx.strokeRect(padLeft, padTop, plotW, plotH);
 
-    ctx.fillStyle = '#06b6d4';
+    // Left Y-axis labels (Voltage in blue)
+    ctx.fillStyle = theme.phasorV;
     ctx.font = '9px "JetBrains Mono", monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(maxA.toFixed(1) + ' V', padLeft - 4, padTop + 8);
-    ctx.fillText(minA.toFixed(1) + ' V', padLeft - 4, padTop + plotH);
+    ctx.textBaseline = 'middle';
+    ctx.fillText(maxA.toFixed(1) + ' V', padLeft - 4, padTop + 6);
+    ctx.fillText(minA.toFixed(1) + ' V', padLeft - 4, padTop + plotH - 6);
 
-    ctx.fillStyle = '#f59e0b';
+    // Right Y-axis labels (Current in amber)
+    ctx.fillStyle = theme.phasorI;
     ctx.textAlign = 'left';
-    ctx.fillText(maxB.toFixed(2) + ' A', width - padRight + 4, padTop + 8);
-    ctx.fillText(minB.toFixed(2) + ' A', width - padRight + 4, padTop + plotH);
+    ctx.fillText(maxB.toFixed(2) + ' A', width - padRight + 4, padTop + 6);
+    ctx.fillText(minB.toFixed(2) + ' A', width - padRight + 4, padTop + plotH - 6);
 
+    // Draw Voltage series (A)
     ctx.beginPath();
     ctx.moveTo(getX(0, seriesA.length), getYA(seriesA[0].value));
     for (let i = 1; i < seriesA.length; i++) {
       ctx.lineTo(getX(i, seriesA.length), getYA(seriesA[i].value));
     }
-    ctx.strokeStyle = '#06b6d4';
+    ctx.strokeStyle = theme.phasorV;
     ctx.lineWidth = 1.75;
     ctx.stroke();
 
+    // Draw Current series (B)
     if (seriesB && seriesB.length > 0) {
       ctx.beginPath();
       ctx.moveTo(getX(0, seriesB.length), getYB(seriesB[0].value));
       for (let i = 1; i < seriesB.length; i++) {
         ctx.lineTo(getX(i, seriesB.length), getYB(seriesB[i].value));
       }
-      ctx.strokeStyle = '#f59e0b';
+      ctx.strokeStyle = theme.phasorI;
       ctx.lineWidth = 1.75;
       ctx.stroke();
     }
@@ -374,18 +410,21 @@ class SynchroChart {
   /**
    * Draws a single series chart with a center zero-line (Angle Delta or ROCOF).
    */
-  static drawZeroCenteredSeries(canvas, points, unit = '°', color = '#8b5cf6') {
+  static drawZeroCenteredSeries(canvas, points, unit = '°', color = null) {
     const { ctx, width, height } = this.setupCanvas(canvas);
+    const theme = this.getTheme();
     ctx.clearRect(0, 0, width, height);
 
+    const seriesColor = color || (theme.isDark ? '#A78BFA' : '#7C3AED');
     const padTop = 16, padBottom = 20, padLeft = 45, padRight = 15;
     const plotW = width - padLeft - padRight;
     const plotH = height - padTop - padBottom;
 
     if (!points || points.length === 0) {
-      ctx.fillStyle = '#64748b';
-      ctx.font = '11px "JetBrains Mono", monospace';
+      ctx.fillStyle = theme.textMuted;
+      ctx.font = '11px "Inter", -apple-system, sans-serif';
       ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
       ctx.fillText('Awaiting data series...', width / 2, height / 2);
       return;
     }
@@ -397,28 +436,36 @@ class SynchroChart {
     const getY = v => padTop + plotH - ((v - minVal) / (maxVal - minVal)) * plotH;
     const getX = i => padLeft + (i / Math.max(1, points.length - 1)) * plotW;
 
+    // Grid box
+    ctx.strokeStyle = theme.border;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(padLeft, padTop, plotW, plotH);
+
+    // Center zero reference line
     const zeroY = getY(0);
     ctx.save();
     ctx.setLineDash([3, 3]);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.strokeStyle = theme.zeroLine;
     ctx.beginPath();
     ctx.moveTo(padLeft, zeroY); ctx.lineTo(width - padRight, zeroY);
     ctx.stroke();
     ctx.restore();
 
-    ctx.fillStyle = '#64748b';
+    // Labels
+    ctx.fillStyle = theme.textMuted;
     ctx.font = '9px "JetBrains Mono", monospace';
     ctx.textAlign = 'right';
-    ctx.fillText('+' + absMax.toFixed(2) + ' ' + unit, padLeft - 4, padTop + 8);
-    ctx.fillText('0.00 ' + unit, padLeft - 4, zeroY + 3);
-    ctx.fillText('-' + absMax.toFixed(2) + ' ' + unit, padLeft - 4, padTop + plotH);
+    ctx.textBaseline = 'middle';
+    ctx.fillText('+' + absMax.toFixed(2) + ' ' + unit, padLeft - 4, padTop + 6);
+    ctx.fillText('0.00 ' + unit, padLeft - 4, zeroY);
+    ctx.fillText('-' + absMax.toFixed(2) + ' ' + unit, padLeft - 4, padTop + plotH - 6);
 
     ctx.beginPath();
     ctx.moveTo(getX(0), getY(points[0].value));
     for (let i = 1; i < points.length; i++) {
       ctx.lineTo(getX(i), getY(points[i].value));
     }
-    ctx.strokeStyle = color;
+    ctx.strokeStyle = seriesColor;
     ctx.lineWidth = 1.75;
     ctx.stroke();
   }
@@ -430,58 +477,63 @@ class SynchroChart {
    */
   static drawMultiFreq(canvas, series) {
     const { ctx, width, height } = this.setupCanvas(canvas);
+    const theme = this.getTheme();
     ctx.clearRect(0, 0, width, height);
 
-    const padTop = 14, padBottom = 18, padLeft = 42, padRight = 10;
+    const padTop = 14, padBottom = 18, padLeft = 45, padRight = 12;
     const plotW = width - padLeft - padRight;
     const plotH = height - padTop - padBottom;
 
     const allPoints = series.flatMap(s => s.points || []);
     if (allPoints.length === 0) {
-      ctx.fillStyle = '#556f8a';
-      ctx.font = '11px "JetBrains Mono", monospace';
+      ctx.fillStyle = theme.textMuted;
+      ctx.font = '11px "Inter", -apple-system, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('Awaiting global frequency data...', width / 2, height / 2);
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Awaiting global frequency telemetry...', width / 2, height / 2);
       return;
     }
 
     const allVals = allPoints.map(p => p.value);
-    let minVal = Math.min(...allVals, 49.90);
-    let maxVal = Math.max(...allVals, 50.10);
-    const margin = (maxVal - minVal) * 0.1 || 0.05;
+    let minVal = Math.min(...allVals, 49.92);
+    let maxVal = Math.max(...allVals, 50.08);
+    const margin = (maxVal - minVal) * 0.1 || 0.04;
     minVal -= margin; maxVal += margin;
 
     const getY = val => padTop + plotH - ((val - minVal) / (maxVal - minVal)) * plotH;
 
-    // Gridlines
-    ctx.strokeStyle = '#1a2a42';
-    ctx.lineWidth = 1;
+    // Subtle horizontal gridlines
     for (let i = 0; i <= 4; i++) {
       const y = padTop + (plotH / 4) * i;
+      ctx.strokeStyle = theme.grid;
+      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(padLeft, y); ctx.lineTo(width - padRight, y);
       ctx.stroke();
+
       const v = maxVal - ((maxVal - minVal) / 4) * i;
-      ctx.fillStyle = '#556f8a';
+      ctx.fillStyle = theme.textMuted;
       ctx.font = '9px "JetBrains Mono", monospace';
       ctx.textAlign = 'right';
-      ctx.fillText(v.toFixed(3), padLeft - 4, y + 3);
+      ctx.textBaseline = 'middle';
+      ctx.fillText(v.toFixed(3), padLeft - 4, y);
     }
 
-    // 50 Hz reference
+    // 50.000 Hz reference line
     const nomY = getY(50.0);
     ctx.save();
     ctx.setLineDash([4, 4]);
-    ctx.strokeStyle = 'rgba(6, 182, 212, 0.5)';
+    ctx.strokeStyle = theme.nominalLine;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(padLeft, nomY); ctx.lineTo(width - padRight, nomY);
     ctx.stroke();
     ctx.restore();
-    ctx.fillStyle = 'rgba(6, 182, 212, 0.6)';
+
+    ctx.fillStyle = theme.nominalText;
     ctx.font = '9px "JetBrains Mono", monospace';
     ctx.textAlign = 'right';
-    ctx.fillText('50.000', padLeft - 4, nomY + 3);
+    ctx.fillText('50.000', padLeft - 4, nomY);
 
     // Draw each PMU series
     series.forEach(s => {
@@ -496,7 +548,7 @@ class SynchroChart {
         ctx.lineTo(getX(i), getY(pts[i].value));
       }
       ctx.strokeStyle = s.color;
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 1.75;
       ctx.stroke();
     });
   }
@@ -504,27 +556,23 @@ class SynchroChart {
   /**
    * Draws angle separation histories (B, C, D relative to A).
    * @param {HTMLCanvasElement} canvas
-   * @param {Array<{points: Array, color: string, label: string}>} series  — delta angle points
+   * @param {Array<{points: Array, color: string, label: string}>} series
    */
   static drawAngleSeparation(canvas, series) {
-    this.drawZeroCenteredSeries(
-      canvas,
-      [],  // let multi-series handle it below
-      '°', '#f59e0b'
-    );
-
     const { ctx, width, height } = this.setupCanvas(canvas);
+    const theme = this.getTheme();
     ctx.clearRect(0, 0, width, height);
 
-    const padTop = 14, padBottom = 18, padLeft = 42, padRight = 10;
+    const padTop = 14, padBottom = 18, padLeft = 45, padRight = 12;
     const plotW = width - padLeft - padRight;
     const plotH = height - padTop - padBottom;
 
     const allPoints = series.flatMap(s => s.points || []);
     if (allPoints.length === 0) {
-      ctx.fillStyle = '#556f8a';
-      ctx.font = '11px "JetBrains Mono", monospace';
+      ctx.fillStyle = theme.textMuted;
+      ctx.font = '11px "Inter", -apple-system, sans-serif';
       ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
       ctx.fillText('Awaiting angle separation data...', width / 2, height / 2);
       return;
     }
@@ -535,32 +583,33 @@ class SynchroChart {
     const getY = val => padTop + plotH / 2 - (val / absMax) * (plotH / 2);
     const zeroY = padTop + plotH / 2;
 
-    // Grid
-    ctx.strokeStyle = '#1a2a42';
-    ctx.lineWidth = 1;
+    // Horizontal grid
     for (let i = 0; i <= 4; i++) {
       const y = padTop + (plotH / 4) * i;
+      ctx.strokeStyle = theme.grid;
+      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(padLeft, y); ctx.lineTo(width - padRight, y);
       ctx.stroke();
     }
 
-    // Zero line
+    // Zero reference line
     ctx.save();
     ctx.setLineDash([3, 3]);
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.strokeStyle = theme.zeroLine;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(padLeft, zeroY); ctx.lineTo(width - padRight, zeroY);
     ctx.stroke();
     ctx.restore();
 
-    ctx.fillStyle = '#556f8a';
+    ctx.fillStyle = theme.textMuted;
     ctx.font = '9px "JetBrains Mono", monospace';
     ctx.textAlign = 'right';
-    ctx.fillText('+' + absMax.toFixed(1) + '°', padLeft - 4, padTop + 8);
-    ctx.fillText('0°', padLeft - 4, zeroY + 3);
-    ctx.fillText('-' + absMax.toFixed(1) + '°', padLeft - 4, padTop + plotH);
+    ctx.textBaseline = 'middle';
+    ctx.fillText('+' + absMax.toFixed(1) + '°', padLeft - 4, padTop + 4);
+    ctx.fillText('0°', padLeft - 4, zeroY);
+    ctx.fillText('-' + absMax.toFixed(1) + '°', padLeft - 4, padTop + plotH - 4);
 
     series.forEach(s => {
       if (!s.points || s.points.length < 2) return;
@@ -574,7 +623,7 @@ class SynchroChart {
         ctx.lineTo(getX(i), getY(pts[i].value));
       }
       ctx.strokeStyle = s.color;
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 1.75;
       ctx.stroke();
     });
   }

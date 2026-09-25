@@ -1,9 +1,6 @@
 /**
  * WAMS Synchrophasor PMU SCADA Dashboard — Application Logic
- * 
- * Layout: System toolbar | Left sidebar (PMU index, angle table, alarm log) |
- *         2×2 PMU cards (phasor diagram + tabular data + sparkline) |
- *         Bottom: global frequency overlay + angle separation history
+ * Modern SaaS / Engineering Analytics (Streamlit / Grafana / Linear)
  *
  * Real-time via Socket.IO "new-reading" event.
  * REST fallback: GET /api/latest, GET /api/history?pmu_id=X&range=Y
@@ -18,10 +15,10 @@
   const DEFAULT_RENDER_URL = 'https://pmu-backend-ury8.onrender.com';
 
   const PMU_CONFIG = [
-    { id: 'PMU_A', color: '#06b6d4', defaultStation: 'SUBSTATION_1 (Primary Grid Tie)' },
-    { id: 'PMU_B', color: '#10b981', defaultStation: 'SUBSTATION_2 (Solar Inverter / DG)' },
-    { id: 'PMU_C', color: '#f59e0b', defaultStation: 'SUBSTATION_3 (Industrial Feeder)' },
-    { id: 'PMU_D', color: '#a78bfa', defaultStation: 'SUBSTATION_4 (Microgrid Bus)' },
+    { id: 'PMU_A', color: '#2563EB', defaultStation: 'SUBSTATION_1 (Primary Grid Tie)' },
+    { id: 'PMU_B', color: '#059669', defaultStation: 'SUBSTATION_2 (Solar Inverter / DG)' },
+    { id: 'PMU_C', color: '#D97706', defaultStation: 'SUBSTATION_3 (Industrial Feeder)' },
+    { id: 'PMU_D', color: '#7C3AED', defaultStation: 'SUBSTATION_4 (Microgrid Bus)' },
   ];
 
   const ALLOWED_RANGES = ['-15m', '-1h', '-6h', '-24h', '-7d'];
@@ -80,6 +77,9 @@
     staleSelect:  document.getElementById('stale-threshold-select'),
     backendSelect:document.getElementById('backend-target-select'),
     btnSim:       document.getElementById('btn-toggle-sim'),
+    themeBtn:     document.getElementById('btn-theme-toggle'),
+    sunIcon:      document.getElementById('theme-sun-icon'),
+    moonIcon:     document.getElementById('theme-moon-icon'),
     globalFreqCanvas:  document.getElementById('global-freq-canvas'),
     globalAngleCanvas: document.getElementById('global-angle-canvas'),
     globalFreqPills:   document.getElementById('global-freq-pills'),
@@ -145,12 +145,70 @@
            d.getUTCSeconds().toString().padStart(2,'0');
   }
 
-  function freqClass(hz) {
-    if (hz == null) return 'dim';
+  function getFreqStatus(hz) {
+    if (hz == null) return 'ok';
     const dev = Math.abs(hz - NOMINAL_HZ);
     if (dev > FREQ_ALARM_HZ) return 'alarm';
     if (dev > FREQ_WARN_HZ)  return 'warn';
     return 'ok';
+  }
+
+  // ---------------------------------------------------------------------------
+  // Theme Management (Light by default, Dark optional)
+  // ---------------------------------------------------------------------------
+  function initTheme() {
+    const saved = localStorage.getItem('pmu_theme') || 'light';
+    setTheme(saved);
+
+    if (el.themeBtn) {
+      el.themeBtn.addEventListener('click', () => {
+        const cur = document.documentElement.getAttribute('data-theme') || 'light';
+        const next = cur === 'dark' ? 'light' : 'dark';
+        setTheme(next);
+      });
+    }
+  }
+
+  function setTheme(theme) {
+    if (theme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      if (el.sunIcon) el.sunIcon.style.display = 'block';
+      if (el.moonIcon) el.moonIcon.style.display = 'none';
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      if (el.sunIcon) el.sunIcon.style.display = 'none';
+      if (el.moonIcon) el.moonIcon.style.display = 'block';
+    }
+    localStorage.setItem('pmu_theme', theme);
+    redrawAllCanvases();
+  }
+
+  function redrawAllCanvases() {
+    Object.keys(state.pmus).forEach(id => {
+      const card = document.getElementById(`card-${id}`);
+      const pmu = state.pmus[id];
+      if (card) {
+        const fc = card.querySelector('.canvas-freq');
+        if (fc) SynchroChart.drawFrequency(fc, pmu.chartPoints);
+        const pc = card.querySelector('.canvas-phasor');
+        if (pc) {
+          if (pmu.latestFrame) {
+            SynchroChart.drawPhasor(pc,
+              pmu.latestFrame.voltage_magnitude_v, pmu.latestFrame.voltage_angle_deg,
+              pmu.latestFrame.current_magnitude_a, pmu.latestFrame.current_angle_deg
+            );
+          } else {
+            SynchroChart.drawPhasor(pc, null, null, null, null);
+          }
+        }
+      }
+    });
+
+    if (state.isModalOpen && state.inspectedPmuId) {
+      const pmu = state.pmus[state.inspectedPmuId];
+      if (pmu) updateModalVitals(pmu);
+    }
+    redrawGlobalCharts();
   }
 
   // ---------------------------------------------------------------------------
@@ -164,7 +222,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Connection Status
+  // Connection Status (Subtle calm dot, no neon blinking)
   // ---------------------------------------------------------------------------
   function setConnStatus(state_str, label) {
     if (el.connDot) el.connDot.className = `conn-dot ${state_str}`;
@@ -175,14 +233,12 @@
   // Alarm Log
   // ---------------------------------------------------------------------------
   function logAlarm(level, message) {
-    // level: 'alarm' | 'warn' | 'info'
     const entry = document.createElement('div');
     entry.className = `alarm-entry level-${level}`;
     entry.innerHTML = `<span class="alarm-time mono">${nowUtc()}</span><span class="alarm-msg">${message}</span>`;
 
     if (el.alarmLog) {
       el.alarmLog.insertBefore(entry, el.alarmLog.firstChild);
-      // Keep last 50 entries
       while (el.alarmLog.children.length > 50) {
         el.alarmLog.removeChild(el.alarmLog.lastChild);
       }
@@ -192,9 +248,8 @@
       state.alarmCount++;
       if (el.alarmBadge) {
         el.alarmBadge.className = 'alarm-badge';
-        el.alarmCount && (el.alarmCount.textContent = `${state.alarmCount} ALARM${state.alarmCount !== 1 ? 'S' : ''}`);
+        if (el.alarmCount) el.alarmCount.textContent = `${state.alarmCount} Alarm${state.alarmCount !== 1 ? 's' : ''}`;
       }
-      if (el.alarmCount) el.alarmCount.textContent = `${state.alarmCount} ALARM${state.alarmCount !== 1 ? 'S' : ''}`;
     }
   }
 
@@ -210,7 +265,7 @@
       const isStale = ageSec > state.staleThresholdSec;
       const hasData = frame !== null;
       const freq = frame ? fmtHz(frame.frequency_hz) : '---.---';
-      const statusLabel = !hasData ? 'OFFLINE' : isStale ? 'STALE' : 'ONLINE';
+      const statusLabel = !hasData ? 'Offline' : isStale ? 'Stale' : 'Online';
       const statusColor = !hasData ? 'var(--alarm)' : isStale ? 'var(--warn)' : 'var(--ok)';
       const dotClass = !hasData ? 'offline' : isStale ? 'stale' : 'online';
 
@@ -218,18 +273,17 @@
         <div class="pmu-row" id="row-${cfg.id}" data-pmu="${cfg.id}" role="button" tabindex="0" title="${pmu.station}">
           <span class="pmu-row-dot ${dotClass}" style="background: ${cfg.color};"></span>
           <div class="pmu-row-info">
-            <div class="pmu-row-id mono">${cfg.id}</div>
+            <div class="pmu-row-id">${cfg.id}</div>
             <div class="pmu-row-station">${pmu.station}</div>
           </div>
           <div style="text-align:right;">
             <div class="pmu-row-status" style="color: ${statusColor};">${statusLabel}</div>
-            <div class="pmu-row-freq">${freq} Hz</div>
+            <div class="pmu-row-freq mono">${freq} Hz</div>
           </div>
         </div>
       `;
     }).join('');
 
-    // Click rows to open inspector
     el.pmuIndex.querySelectorAll('.pmu-row').forEach(row => {
       row.addEventListener('click', () => openModal(row.getAttribute('data-pmu')));
       row.addEventListener('keydown', e => { if (e.key === 'Enter') openModal(row.getAttribute('data-pmu')); });
@@ -248,7 +302,7 @@
       const f = pmu && pmu.latestFrame;
 
       if (!f || !refFrame) {
-        return `<tr><td class="mono" style="color: var(--pmu-${id.slice(-1).toLowerCase()})">${id}</td><td class="dim">—</td><td class="dim">—</td><td class="dim">—</td></tr>`;
+        return `<tr><td style="font-weight:600;color:${PMU_CONFIG.find(c => c.id === id)?.color || '#2563EB'}">${id}</td><td class="dim mono">—</td><td class="dim mono">—</td><td class="dim mono">—</td></tr>`;
       }
 
       const dv = (f.voltage_angle_deg - (refFrame.voltage_angle_deg || 0));
@@ -256,11 +310,11 @@
       const df = (f.frequency_hz       - (refFrame.frequency_hz       || NOMINAL_HZ));
 
       const dvClass = Math.abs(dv) > 30 ? 'sep-large' : Math.abs(dv) > 15 ? 'sep-medium' : '';
-      const color = PMU_CONFIG.find(c => c.id === id)?.color || '#fff';
+      const color = PMU_CONFIG.find(c => c.id === id)?.color || '#2563EB';
 
       return `
         <tr>
-          <td class="mono" style="color:${color}">${id}</td>
+          <td style="font-weight:600;color:${color}">${id}</td>
           <td class="mono ${dvClass}">${dv >= 0 ? '+' : ''}${dv.toFixed(2)}</td>
           <td class="mono">${di >= 0 ? '+' : ''}${di.toFixed(2)}</td>
           <td class="mono">${df >= 0 ? '+' : ''}${df.toFixed(3)}</td>
@@ -285,7 +339,6 @@
       if (pmu.frameTimeMs > latestMs) latestMs = pmu.frameTimeMs;
       if (pmu.latestFrame && pmu.latestFrame.rate_hz != null) latestRate = pmu.latestFrame.rate_hz;
 
-      // Status bar PMU dots
       const dot = document.getElementById(`dot-${pmu.id}`);
       if (dot) {
         dot.classList.toggle('online', !!isOnline);
@@ -316,36 +369,47 @@
     const hasData = pmu.latestFrame !== null;
     const cfg = PMU_CONFIG.find(c => c.id === pmu.id);
 
-    const freq = fmtHz(f.frequency_hz);
-    const dev = f.frequency_hz != null ? (f.frequency_hz - NOMINAL_HZ) : 0;
+    const freq = hasData ? fmtHz(f.frequency_hz) : '50.000';
+    const dev = (hasData && f.frequency_hz != null) ? (f.frequency_hz - NOMINAL_HZ) : 0;
     const devSign = dev >= 0 ? `+${dev.toFixed(3)}` : dev.toFixed(3);
-    const devCls = Math.abs(dev) > FREQ_ALARM_HZ ? 'alarm' : Math.abs(dev) > FREQ_WARN_HZ ? 'warn' : 'ok';
+    const devCls = !hasData ? 'dim' : Math.abs(dev) > FREQ_ALARM_HZ ? 'alarm' : Math.abs(dev) > FREQ_WARN_HZ ? 'warn' : 'ok';
 
-    // Frequency bar fill (centered at 50 Hz)
+    // Frequency bar fill
     const barPct = Math.min(Math.abs(dev) / FREQ_ALARM_HZ * 50, 50);
-    const barColor = devCls === 'alarm' ? 'var(--alarm)' : devCls === 'warn' ? 'var(--warn)' : 'var(--ok)';
+    const barColor = !hasData ? 'transparent' : devCls === 'alarm' ? 'var(--alarm)' : devCls === 'warn' ? 'var(--warn)' : 'var(--ok)';
 
-    // Status flags
-    const gpsOk  = f.status_gps_locked === true;
-    const dataOk = f.status_data_valid === true;
-    const pmuOk  = f.status_pmu_ok === true;
-    const syncSrc = f.sync_source || 'N/A';
-    const tQ     = f.sync_time_quality != null ? f.sync_time_quality : '-';
+    // Status badges
+    let badgesHtml = '';
+    if (!hasData) {
+      badgesHtml = `<span class="badge neutral">OFFLINE</span>`;
+    } else {
+      const pmuOk  = f.status_pmu_ok === true;
+      const gpsOk  = f.status_gps_locked === true;
+      const dataOk = f.status_data_valid === true;
+      badgesHtml = `
+        <span class="badge ${isStale ? 'warn' : 'ok'}">${isStale ? 'STALE' : 'ONLINE'}</span>
+        ${pmuOk  ? '<span class="badge ok">PMU OK</span>' : '<span class="badge alarm">PMU ERR</span>'}
+        ${gpsOk  ? '<span class="badge ok">GPS LK</span>' : '<span class="badge warn">GPS UN</span>'}
+        ${dataOk ? '' : '<span class="badge alarm">DATA ERR</span>'}
+      `;
+    }
 
-    const ageText = hasData ? (ageSec === 0 ? 'Just now' : `${ageSec}s ago`) : 'No frames';
-    const seq  = f.sequence != null ? `#${f.sequence}` : '—';
-    const rate = f.rate_hz != null ? `${f.rate_hz} sps` : '—';
+    const syncSrc = hasData ? (f.sync_source || 'N/A') : '—';
+    const tQ      = (hasData && f.sync_time_quality != null) ? f.sync_time_quality : '—';
+    const ageText = hasData ? (ageSec === 0 ? 'Just now' : `${ageSec}s ago`) : 'No telemetry';
+    const seq     = hasData && f.sequence != null ? `#${f.sequence}` : '—';
+    const rate    = hasData && f.rate_hz != null ? `${f.rate_hz} sps` : '—';
     const staleClass = isStale ? 'stale' : '';
 
     return `
       <!-- Card Header -->
       <div class="card-header">
-        <span class="card-id mono" style="color:${cfg?.color || '#06b6d4'}">${pmu.id}</span>
-        <span class="card-station">${pmu.station}</span>
+        <div class="card-title-wrap">
+          <span class="card-id" style="color:${cfg?.color || '#2563EB'}">${pmu.id}</span>
+          <span class="card-station">${pmu.station}</span>
+        </div>
         <div class="card-badges">
-          ${pmuOk  ? '<span class="badge ok">PMU OK</span>' : '<span class="badge alarm">PMU ERR</span>'}
-          ${gpsOk  ? '<span class="badge ok">GPS LK</span>' : '<span class="badge warn">GPS UN</span>'}
-          ${dataOk ? '' : '<span class="badge alarm">DATA ERR</span>'}
+          ${badgesHtml}
         </div>
         <span class="card-age ${staleClass}"><span class="val-age">${ageText}</span></span>
       </div>
@@ -360,24 +424,24 @@
           </div>
           <div class="phasor-legend">
             <div class="phasor-legend-item">
-              <span class="phasor-legend-dot" style="background:var(--cyan)"></span>
-              <span>V: <span class="mono val-vmag">${fmtV(f.voltage_magnitude_v)}</span> V @ <span class="mono val-vangle">${fmtDeg(f.voltage_angle_deg)}°</span></span>
+              <span class="phasor-legend-dot" style="background:var(--voltage-color)"></span>
+              <span>V: <span class="mono val-vmag">${hasData ? fmtV(f.voltage_magnitude_v) : '—'}</span> V @ <span class="mono val-vangle">${hasData ? fmtDeg(f.voltage_angle_deg) + '°' : '—'}</span></span>
             </div>
             <div class="phasor-legend-item">
-              <span class="phasor-legend-dot" style="background:var(--amber)"></span>
-              <span>I: <span class="mono val-imag">${fmtA(f.current_magnitude_a)}</span> A @ <span class="mono val-iangle">${fmtDeg(f.current_angle_deg)}°</span></span>
+              <span class="phasor-legend-dot" style="background:var(--current-color)"></span>
+              <span>I: <span class="mono val-imag">${hasData ? fmtA(f.current_magnitude_a) : '—'}</span> A @ <span class="mono val-iangle">${hasData ? fmtDeg(f.current_angle_deg) + '°' : '—'}</span></span>
             </div>
           </div>
         </div>
 
         <!-- Data panel -->
         <div class="data-panel">
-          <!-- Frequency large display -->
+          <!-- Frequency primary metric -->
           <div class="freq-bar-wrap">
             <div class="freq-bar-header">
               <span>
-                <span class="freq-reading mono ${devCls} val-freq">${freq}</span>
-                <span class="freq-deviation ${devCls} val-delta">${devSign} Hz</span>
+                <span class="freq-reading mono ${devCls} val-freq">${hasData ? freq : '—'}</span>
+                <span class="freq-deviation ${devCls} val-delta">${hasData ? devSign + ' Hz' : 'Standby'}</span>
               </span>
               <span class="label">Grid Frequency</span>
             </div>
@@ -392,47 +456,47 @@
             <tbody>
               <tr>
                 <td class="meas-name">Voltage (RMS)</td>
-                <td class="meas-val mono val-vmag">${fmtV(f.voltage_magnitude_v)}</td>
+                <td class="meas-val mono val-vmag">${hasData ? fmtV(f.voltage_magnitude_v) : '—'}</td>
                 <td class="meas-unit">V</td>
               </tr>
               <tr>
                 <td class="meas-name">Voltage Angle θ_V</td>
-                <td class="meas-val mono val-vangle">${fmtDeg(f.voltage_angle_deg)}</td>
+                <td class="meas-val mono val-vangle">${hasData ? fmtDeg(f.voltage_angle_deg) : '—'}</td>
                 <td class="meas-unit">°</td>
               </tr>
               <tr>
                 <td class="meas-name">Current (RMS)</td>
-                <td class="meas-val mono val-imag">${fmtA(f.current_magnitude_a)}</td>
+                <td class="meas-val mono val-imag">${hasData ? fmtA(f.current_magnitude_a) : '—'}</td>
                 <td class="meas-unit">A</td>
               </tr>
               <tr>
                 <td class="meas-name">Current Angle θ_I</td>
-                <td class="meas-val mono val-iangle">${fmtDeg(f.current_angle_deg)}</td>
+                <td class="meas-val mono val-iangle">${hasData ? fmtDeg(f.current_angle_deg) : '—'}</td>
                 <td class="meas-unit">°</td>
               </tr>
               <tr class="meas-divider">
                 <td class="meas-name">Active Power P</td>
-                <td class="meas-val mono val-p">${fmtKW(f.power_p_kw)}</td>
+                <td class="meas-val mono val-p">${hasData ? fmtKW(f.power_p_kw) : '—'}</td>
                 <td class="meas-unit">kW</td>
               </tr>
               <tr>
                 <td class="meas-name">Reactive Power Q</td>
-                <td class="meas-val mono val-q">${fmtKW(f.power_q_kvar)}</td>
+                <td class="meas-val mono val-q">${hasData ? fmtKW(f.power_q_kvar) : '—'}</td>
                 <td class="meas-unit">kVAR</td>
               </tr>
               <tr>
                 <td class="meas-name">Apparent Power S</td>
-                <td class="meas-val mono val-s">${fmtKW(f.power_s_kva)}</td>
+                <td class="meas-val mono val-s">${hasData ? fmtKW(f.power_s_kva) : '—'}</td>
                 <td class="meas-unit">kVA</td>
               </tr>
               <tr>
                 <td class="meas-name">Power Factor</td>
-                <td class="meas-val mono val-pf">${fmtPF(f.power_power_factor)}</td>
+                <td class="meas-val mono val-pf">${hasData ? fmtPF(f.power_power_factor) : '—'}</td>
                 <td class="meas-unit"></td>
               </tr>
               <tr class="meas-divider">
                 <td class="meas-name">ROCOF</td>
-                <td class="meas-val mono val-rocof">${f.rocof_hz_per_s != null ? f.rocof_hz_per_s.toFixed(3) : '—'}</td>
+                <td class="meas-val mono val-rocof">${hasData && f.rocof_hz_per_s != null ? f.rocof_hz_per_s.toFixed(3) : '—'}</td>
                 <td class="meas-unit">Hz/s</td>
               </tr>
               <tr>
@@ -445,46 +509,53 @@
         </div>
       </div>
 
-      <!-- Card Footer: sparkline + range pills + inspect button -->
+      <!-- Card Footer -->
       <div class="card-footer">
         <div class="range-pills">
           ${ALLOWED_RANGES.map(r => `<button class="rpill${pmu.activeRange === r ? ' active' : ''}" data-pmu="${pmu.id}" data-range="${r}">${r.replace('-','')}</button>`).join('')}
         </div>
         <div class="sparkline-wrap"><canvas class="canvas-freq"></canvas></div>
-        <span class="mono dim" style="font-size:10px;">Seq: <span class="val-seq">${seq}</span> &bull; <span class="val-rate">${rate}</span></span>
-        <button class="btn-inspect" data-pmu="${pmu.id}">Inspect &#x276F;</button>
+        <span class="dim mono" style="font-size:10px;">Seq: <span class="val-seq">${seq}</span> &bull; <span class="val-rate">${rate}</span></span>
+        <button class="btn-inspect" data-pmu="${pmu.id}">Inspect &rarr;</button>
       </div>
     `;
   }
 
   function renderCard(pmuId) {
-    const pmu = state.pmus[pmuId];
+    const id = (typeof pmuId === 'object' && pmuId !== null) ? pmuId.id : pmuId;
+    const pmu = state.pmus[id];
+    if (!pmu) return;
+
     const ageSec = getFrameAgeSec(pmu.frameTimeMs);
     const isStale = ageSec > state.staleThresholdSec;
 
-    let card = document.getElementById(`card-${pmuId}`);
+    let card = document.getElementById(`card-${id}`);
     const isNew = !card;
 
     if (isNew) {
       card = document.createElement('div');
-      card.id = `card-${pmuId}`;
+      card.id = `card-${id}`;
       card.className = 'pmu-card';
-      card.setAttribute('data-pmu', pmuId);
+      card.setAttribute('data-pmu', id);
       el.cardsGrid.appendChild(card);
     }
 
-    card.className = `pmu-card ${isStale && pmu.latestFrame ? 'stale' : ''}`;
+    card.className = `pmu-card ${isStale && pmu.latestFrame ? 'stale' : !pmu.latestFrame ? 'offline' : ''}`;
     card.innerHTML = buildCardHtml(pmu);
-    bindCardEvents(card, pmuId);
+    bindCardEvents(card, id);
 
-    // Immediately draw phasor diagram if we have data
+    // Draw phasor diagram
     const phasorCanvas = card.querySelector('.canvas-phasor');
-    if (phasorCanvas && pmu.latestFrame) {
-      const f = pmu.latestFrame;
-      SynchroChart.drawPhasor(phasorCanvas,
-        f.voltage_magnitude_v, f.voltage_angle_deg,
-        f.current_magnitude_a, f.current_angle_deg
-      );
+    if (phasorCanvas) {
+      if (pmu.latestFrame) {
+        const f = pmu.latestFrame;
+        SynchroChart.drawPhasor(phasorCanvas,
+          f.voltage_magnitude_v, f.voltage_angle_deg,
+          f.current_magnitude_a, f.current_angle_deg
+        );
+      } else {
+        SynchroChart.drawPhasor(phasorCanvas, null, null, null, null);
+      }
     }
 
     // Draw frequency sparkline
@@ -498,7 +569,7 @@
 
   function updateCardValues(pmuId) {
     const pmu = state.pmus[pmuId];
-    const f = pmu.latestFrame;
+    const f = pmu?.latestFrame;
     if (!f) return;
 
     const card = document.getElementById(`card-${pmuId}`);
@@ -536,6 +607,20 @@
       barEl.style.left = dev >= 0 ? '50%' : `calc(50% - ${barPct}%)`;
     }
 
+    // Update badges
+    const badgesWrap = card.querySelector('.card-badges');
+    if (badgesWrap) {
+      const pmuOk  = f.status_pmu_ok === true;
+      const gpsOk  = f.status_gps_locked === true;
+      const dataOk = f.status_data_valid === true;
+      badgesWrap.innerHTML = `
+        <span class="badge ${isStale ? 'warn' : 'ok'}">${isStale ? 'STALE' : 'ONLINE'}</span>
+        ${pmuOk  ? '<span class="badge ok">PMU OK</span>' : '<span class="badge alarm">PMU ERR</span>'}
+        ${gpsOk  ? '<span class="badge ok">GPS LK</span>' : '<span class="badge warn">GPS UN</span>'}
+        ${dataOk ? '' : '<span class="badge alarm">DATA ERR</span>'}
+      `;
+    }
+
     setText('.val-vmag', fmtV(f.voltage_magnitude_v));
     setText('.val-vangle', fmtDeg(f.voltage_angle_deg) + '°');
     setText('.val-imag', fmtA(f.current_magnitude_a));
@@ -545,7 +630,7 @@
     setText('.val-s', fmtKW(f.power_s_kva));
     setText('.val-pf', fmtPF(f.power_power_factor));
     setText('.val-rocof', f.rocof_hz_per_s != null ? f.rocof_hz_per_s.toFixed(3) : '—');
-    setText('.val-age', pmu.latestFrame ? (ageSec === 0 ? 'Just now' : `${ageSec}s ago`) : 'No frames');
+    setText('.val-age', pmu.latestFrame ? (ageSec === 0 ? 'Just now' : `${ageSec}s ago`) : 'No telemetry');
     setText('.val-seq', f.sequence != null ? `#${f.sequence}` : '—');
     setText('.val-rate', f.rate_hz != null ? `${f.rate_hz} sps` : '—');
 
@@ -592,17 +677,7 @@
   }
 
   function renderSkeletons() {
-    el.cardsGrid.innerHTML = PMU_CONFIG.map(cfg => `
-      <div class="pmu-card loading" id="card-${cfg.id}" data-pmu="${cfg.id}">
-        <div class="card-header">
-          <span class="card-id mono" style="color:${cfg.color}">${cfg.id}</span>
-          <span class="card-station">${cfg.defaultStation}</span>
-        </div>
-        <div class="card-body" style="align-items:center;justify-content:center;min-height:200px;">
-          <span class="dim mono" style="font-size:12px;">CONNECTING TO BACKEND…</span>
-        </div>
-      </div>
-    `).join('');
+    PMU_CONFIG.forEach(cfg => renderCard(cfg.id));
   }
 
   // ---------------------------------------------------------------------------
@@ -618,7 +693,6 @@
     }));
     SynchroChart.drawMultiFreq(el.globalFreqCanvas, series);
 
-    // Angle separation (B, C, D relative to A)
     if (!el.globalAngleCanvas) return;
     const refPmu = state.pmus['PMU_A'];
     if (!refPmu || !refPmu.historyCache[state.globalFreqRange]) return;
@@ -645,7 +719,7 @@
     const pmuId = frame.pmu_id;
 
     if (!state.pmus[pmuId]) {
-      const cfg = PMU_CONFIG.find(c => c.id === pmuId) || { color: '#06b6d4', defaultStation: 'SUBSTATION' };
+      const cfg = PMU_CONFIG.find(c => c.id === pmuId) || { color: '#2563EB', defaultStation: 'SUBSTATION' };
       state.pmus[pmuId] = {
         id: pmuId, color: cfg.color,
         station: frame.station || cfg.defaultStation,
@@ -655,7 +729,6 @@
     }
 
     const pmu = state.pmus[pmuId];
-    const prevFreq = pmu.latestFrame ? pmu.latestFrame.frequency_hz : null;
     pmu.latestFrame = frame;
     if (frame.station) pmu.station = frame.station;
     pmu.frameTimeMs = computeFrameTimestamp(frame);
@@ -670,25 +743,23 @@
     if (frame.frequency_hz != null) {
       const dev = Math.abs(frame.frequency_hz - NOMINAL_HZ);
       if (dev > FREQ_ALARM_HZ) {
-        logAlarm('alarm', `${pmuId}: Freq ${frame.frequency_hz.toFixed(3)} Hz (Δ${(frame.frequency_hz - NOMINAL_HZ >= 0 ? '+' : '')}${(frame.frequency_hz - NOMINAL_HZ).toFixed(3)})`);
+        logAlarm('alarm', `${pmuId}: Frequency deviation ${frame.frequency_hz.toFixed(3)} Hz (Δ${(frame.frequency_hz - NOMINAL_HZ >= 0 ? '+' : '')}${(frame.frequency_hz - NOMINAL_HZ).toFixed(3)} Hz)`);
       }
     }
 
     // Render / update card
     const card = document.getElementById(`card-${pmuId}`);
-    if (!card || card.classList.contains('loading')) {
+    if (!card || card.classList.contains('loading') || card.classList.contains('offline')) {
       renderCard(pmuId);
     } else {
       updateCardValues(pmuId);
     }
 
-    // Update sidebar + table + status bar
     renderSidebarIndex();
     updateAngleSepTable();
     updateStatusBar();
     redrawGlobalCharts();
 
-    // Update modal if open for this PMU
     if (state.isModalOpen && state.inspectedPmuId === pmuId) {
       updateModalVitals(pmu);
     }
@@ -721,29 +792,34 @@
   }
 
   async function loadInitialData() {
-    setConnStatus('reconnecting', 'CONNECTING');
+    setConnStatus('reconnecting', 'Connecting');
     try {
       const data = await fetchWithRetry(`${state.serverUrl}/api/latest`);
       if (el.coldBanner) el.coldBanner.style.display = 'none';
-      setConnStatus('connected', 'LIVE STREAM');
+      setConnStatus('connected', 'Live Stream');
 
       if (Array.isArray(data)) data.forEach(handleNewReading);
       PMU_CONFIG.forEach(cfg => {
-        if (!document.getElementById(`card-${cfg.id}`) || 
-            document.getElementById(`card-${cfg.id}`).classList.contains('loading')) {
-          renderCard(state.pmus[cfg.id]);
-        }
+        // Fixed: Pass cfg.id string
+        renderCard(cfg.id);
       });
 
       Object.keys(state.pmus).forEach(id => fetchHistory(id, '-15m'));
       logAlarm('info', 'Initial telemetry loaded successfully.');
     } catch (err) {
-      setConnStatus('error', 'SERVER OFFLINE');
-      if (el.coldMsg) {
-        el.coldMsg.innerHTML = `<strong>Backend timeout:</strong> ${state.serverUrl} unreachable. <button onclick="location.reload()" style="background:var(--cyan);color:#000;border:none;padding:2px 8px;border-radius:4px;cursor:pointer;font-weight:600;margin-left:8px;">Retry</button>`;
+      // Only show error and log unreachable if socket is not connected and retries exhausted
+      if (!state.isConnected) {
+        setConnStatus('error', 'Server Offline');
+        if (el.coldMsg) {
+          el.coldMsg.innerHTML = `<strong>Backend connection timeout:</strong> ${state.serverUrl} failed to respond after retries. <button onclick="location.reload()" class="ctrl-btn" style="margin-left:8px;padding:2px 8px;">Retry</button>`;
+        }
+        logAlarm('alarm', `Backend unreachable: ${state.serverUrl}`);
+      } else {
+        // Socket.IO is connected and operational
+        setConnStatus('connected', 'Live Stream');
+        if (el.coldBanner) el.coldBanner.style.display = 'none';
       }
-      logAlarm('alarm', `Backend unreachable: ${state.serverUrl}`);
-      PMU_CONFIG.forEach(cfg => renderCard(state.pmus[cfg.id]));
+      PMU_CONFIG.forEach(cfg => renderCard(cfg.id));
     }
   }
 
@@ -799,14 +875,17 @@
     });
 
     state.socket.on('connect', () => {
-      setConnStatus('connected', 'LIVE STREAM');
+      state.isConnected = true;
+      setConnStatus('connected', 'Live Stream');
+      if (el.coldBanner) el.coldBanner.style.display = 'none';
       logAlarm('info', 'Socket.IO stream connected.');
     });
     state.socket.on('disconnect', () => {
-      setConnStatus('reconnecting', 'RECONNECTING');
+      state.isConnected = false;
+      setConnStatus('reconnecting', 'Reconnecting');
     });
     state.socket.on('connect_error', () => {
-      setConnStatus('reconnecting', 'RETRYING');
+      setConnStatus('reconnecting', 'Retrying');
     });
     state.socket.on('new-reading', frame => handleNewReading(frame));
   }
@@ -821,8 +900,8 @@
     const cfg = PMU_CONFIG.find(c => c.id === pmuId);
 
     if (el.modalH2) {
-      el.modalH2.textContent = `${pmuId} — TELEMETRY INSPECTOR`;
-      el.modalH2.style.color = cfg?.color || '#06b6d4';
+      el.modalH2.textContent = `${pmuId} — Telemetry Inspector`;
+      el.modalH2.style.color = cfg?.color || 'var(--text-primary)';
     }
 
     updateModalVitals(pmu);
@@ -834,7 +913,6 @@
     if (typeof el.modal.showModal === 'function') el.modal.showModal();
     else el.modal.setAttribute('open', '');
 
-    // Highlight selected row in sidebar
     document.querySelectorAll('.pmu-row').forEach(r =>
       r.classList.toggle('selected', r.getAttribute('data-pmu') === pmuId)
     );
@@ -866,16 +944,18 @@
       el.modalTs.textContent = `Timestamp: ${new Date(ts).toISOString()} | SOC: ${f.timestamp_soc} | μs: ${f.timestamp_frac_sec_us || 0}`;
     }
 
-    // Phasor diagram in modal
-    if (el.modalPhasorCanvas && f) {
-      SynchroChart.drawPhasor(el.modalPhasorCanvas,
-        f.voltage_magnitude_v, f.voltage_angle_deg,
-        f.current_magnitude_a, f.current_angle_deg
-      );
+    if (el.modalPhasorCanvas) {
+      if (f) {
+        SynchroChart.drawPhasor(el.modalPhasorCanvas,
+          f.voltage_magnitude_v, f.voltage_angle_deg,
+          f.current_magnitude_a, f.current_angle_deg
+        );
+      } else {
+        SynchroChart.drawPhasor(el.modalPhasorCanvas, null, null, null, null);
+      }
     }
 
-    // Raw JSON
-    if (el.modalRawJson) el.modalRawJson.textContent = f ? JSON.stringify(f, null, 2) : 'No frame data.';
+    if (el.modalRawJson) el.modalRawJson.textContent = f ? JSON.stringify(f, null, 2) : 'No telemetry data received for this unit.';
   }
 
   function renderModalCharts(pmu, history) {
@@ -892,12 +972,12 @@
     const seriesAngle = history.filter(h => h.voltage_angle_deg != null && h.current_angle_deg != null).map(h => ({
       time: computeFrameTimestamp(h), value: h.voltage_angle_deg - h.current_angle_deg
     }));
-    if (el.modalChartAngle) SynchroChart.drawZeroCenteredSeries(el.modalChartAngle, seriesAngle, '°', '#8b5cf6');
+    if (el.modalChartAngle) SynchroChart.drawZeroCenteredSeries(el.modalChartAngle, seriesAngle, '°', '#7C3AED');
 
     const seriesRocof = history.filter(h => h.rocof_hz_per_s != null).map(h => ({
       time: computeFrameTimestamp(h), value: h.rocof_hz_per_s
     }));
-    if (el.modalChartRocof) SynchroChart.drawZeroCenteredSeries(el.modalChartRocof, seriesRocof, 'Hz/s', '#ec4899');
+    if (el.modalChartRocof) SynchroChart.drawZeroCenteredSeries(el.modalChartRocof, seriesRocof, 'Hz/s', '#DC2626');
 
     const seriesFreq = history.filter(h => h.frequency_hz != null).map(h => ({
       time: computeFrameTimestamp(h), value: h.frequency_hz
@@ -914,7 +994,7 @@
     el.btnSim.querySelector('span').textContent = state.isSimulating ? 'Stop Demo' : 'Demo Feed';
 
     if (state.isSimulating) {
-      logAlarm('info', 'Demo simulation mode started.');
+      logAlarm('info', 'Demo simulation feed activated.');
       let seq = 1000;
       state.simTimer = setInterval(() => {
         seq++;
@@ -926,7 +1006,7 @@
           const baseFreq = NOMINAL_HZ + (Math.sin(seq * 0.1 + idx) * 0.035) + ((Math.random() - 0.5) * 0.01);
           const vMag = 230.0 + Math.sin(seq * 0.05 + idx) * 3.5 + (Math.random() - 0.5);
           const iMag = 4.8 + Math.cos(seq * 0.08 + idx) * 0.5 + (Math.random() - 0.5) * 0.2;
-          const vAngle = -2.0 + Math.sin(seq * 0.1) * 1.5 + idx * 8;  // each PMU offset by 8°
+          const vAngle = -2.0 + Math.sin(seq * 0.1) * 1.5 + idx * 8;
           const iAngle = vAngle - (15.0 + Math.sin(seq * 0.05) * 2.0);
           const phi = (vAngle - iAngle) * Math.PI / 180;
           const pKw   = (vMag * iMag * Math.cos(phi)) / 1000;
@@ -965,19 +1045,19 @@
       }, 1500);
     } else {
       if (state.simTimer) clearInterval(state.simTimer);
-      logAlarm('info', 'Demo simulation mode stopped.');
+      logAlarm('info', 'Demo simulation feed stopped.');
     }
   }
 
   // ---------------------------------------------------------------------------
-  // 1-second staleness monitor
+  // 1-second Staleness Monitor
   // ---------------------------------------------------------------------------
   function startStalenessMonitor() {
     setInterval(() => {
       Object.keys(state.pmus).forEach(id => {
         const pmu = state.pmus[id];
         const card = document.getElementById(`card-${id}`);
-        if (!card || card.classList.contains('loading')) return;
+        if (!card) return;
 
         const ageSec = getFrameAgeSec(pmu.frameTimeMs);
         const isStale = ageSec > state.staleThresholdSec;
@@ -985,7 +1065,7 @@
         card.classList.toggle('stale', isStale && !!pmu.latestFrame);
 
         const ageEl = card.querySelector('.val-age');
-        if (ageEl) ageEl.textContent = pmu.latestFrame ? (ageSec === 0 ? 'Just now' : `${ageSec}s ago`) : 'No frames';
+        if (ageEl) ageEl.textContent = pmu.latestFrame ? (ageSec === 0 ? 'Just now' : `${ageSec}s ago`) : 'No telemetry';
 
         const cardAgeEl = card.querySelector('.card-age');
         if (cardAgeEl) cardAgeEl.classList.toggle('stale', isStale);
@@ -1001,6 +1081,7 @@
   // App Initialization
   // ---------------------------------------------------------------------------
   function init() {
+    initTheme();
     startClock();
     renderSkeletons();
     renderSidebarIndex();
@@ -1041,23 +1122,8 @@
       });
     });
 
-    // Resize handler
-    window.addEventListener('resize', () => {
-      Object.keys(state.pmus).forEach(id => {
-        const card = document.getElementById(`card-${id}`);
-        const pmu = state.pmus[id];
-        if (card && pmu.latestFrame) {
-          const fc = card.querySelector('.canvas-freq');
-          if (fc) SynchroChart.drawFrequency(fc, pmu.chartPoints);
-          const pc = card.querySelector('.canvas-phasor');
-          if (pc) SynchroChart.drawPhasor(pc,
-            pmu.latestFrame.voltage_magnitude_v, pmu.latestFrame.voltage_angle_deg,
-            pmu.latestFrame.current_magnitude_a, pmu.latestFrame.current_angle_deg
-          );
-        }
-      });
-      redrawGlobalCharts();
-    });
+    // Window resize handler
+    window.addEventListener('resize', redrawAllCanvases);
 
     state.serverUrl = resolveServerUrl(el.backendSelect?.value || 'auto');
     loadInitialData();

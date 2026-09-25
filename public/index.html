@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WAMS Synchrophasor Monitor | IEEE C37.118 PMU Dashboard</title>
-  <meta name="description" content="Wide-Area Monitoring System — real-time SCADA dashboard for 4 synchrophasor PMU devices per IEEE C37.118.2-2011.">
+  <meta name="description" content="Wide-Area Monitoring System — real-time engineering analytics dashboard for 4 synchrophasor PMU devices per IEEE C37.118.2-2011.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,48 +13,64 @@
 <body>
 
   <!-- =========================================================================
-       SYSTEM TOOLBAR (Control Room Grade)
+       SYSTEM TOOLBAR (Modern SaaS / Engineering Analytics)
        ========================================================================= -->
   <header class="sys-banner" role="banner">
     <div class="banner-left">
       <div class="brand">
         <div class="brand-logo">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
           </svg>
-          WAMS&nbsp;<span style="color:var(--text-secondary);font-weight:400;">SYNCHROPHASOR MONITOR</span>
+          <span>WAMS <span class="brand-sub">Synchrophasor Monitor</span></span>
         </div>
         <span class="brand-org">IEEE C37.118.2 &bull; DST-FIST MicroSmartGrid</span>
       </div>
       <div class="banner-sep"></div>
       <div class="sys-clock">UTC <span id="utc-time" class="mono">--:--:--</span></div>
       <div class="banner-sep"></div>
-      <div id="alarm-badge" class="alarm-badge no-alarms" title="Active alarms">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-        <span id="alarm-count">0 ALARMS</span>
+      <div id="alarm-badge" class="alarm-badge no-alarms" title="System alarms">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <span id="alarm-count">0 Alarms</span>
       </div>
     </div>
 
     <div class="banner-right">
-      <div class="ref-label">REF BUS: <strong>PMU_A</strong></div>
+      <div class="ref-label">Ref Bus: <strong>PMU_A</strong></div>
       <div id="conn-pill" class="conn-pill">
         <span id="conn-dot" class="conn-dot"></span>
-        <span id="conn-text" class="mono">INITIALIZING</span>
+        <span id="conn-text">Initializing</span>
       </div>
-      <select id="stale-threshold-select" class="stale-select" title="Mark PMU stale after N seconds without packets">
+      <select id="stale-threshold-select" class="stale-select" title="Mark PMU stale after N seconds without telemetry">
         <option value="15">Stale: 15s</option>
         <option value="30" selected>Stale: 30s</option>
         <option value="60">Stale: 60s</option>
         <option value="120">Stale: 120s</option>
       </select>
-      <select id="backend-target-select" class="stale-select" title="API backend">
+      <select id="backend-target-select" class="stale-select" title="Telemetry API target">
         <option value="auto" selected>API: Auto</option>
         <option value="https://pmu-backend-ury8.onrender.com">Render Cloud</option>
-        <option value="http://localhost:3000">Localhost</option>
+        <option value="http://localhost:3000">Localhost (3000)</option>
       </select>
-      <button id="btn-toggle-sim" class="ctrl-btn" title="Start demo simulation">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+      <button id="btn-toggle-sim" class="ctrl-btn" title="Toggle simulated live telemetry stream">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
         <span>Demo Feed</span>
+      </button>
+      <button id="btn-theme-toggle" class="theme-toggle-btn" title="Toggle Light / Dark mode" aria-label="Toggle Theme">
+        <svg id="theme-sun-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg id="theme-moon-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
       </button>
     </div>
   </header>
@@ -62,18 +78,18 @@
   <!-- Cold-start banner -->
   <div id="cold-banner" class="cold-banner" role="status" aria-live="polite">
     <div class="cold-spinner"></div>
-    <span id="cold-msg"><strong>Waking up backend service</strong> — Render free tier may require 30–50 s cold start. Retrying (<span id="retry-counter">1</span>)…</span>
+    <span id="cold-msg"><strong>Connecting to backend service</strong> &mdash; Cloud instance spin-up in progress. Retrying (<span id="retry-counter">1</span>)&hellip;</span>
   </div>
 
-  <!-- Secondary PDC stats bar -->
-  <div class="status-bar" role="complementary" aria-label="System status strip">
-    <div class="stat-item"><span class="stat-label">ONLINE</span><span id="stat-online" class="stat-val ok mono">0 / 4</span></div>
-    <div class="stat-item"><span class="stat-label">NOMINAL</span><span class="stat-val mono">50.000 Hz</span></div>
-    <div class="stat-item"><span class="stat-label">BASE</span><span class="stat-val mono">230 V</span></div>
-    <div class="stat-item"><span class="stat-label">LAST FRAME</span><span id="stat-last-frame" class="stat-val mono">—</span></div>
-    <div class="stat-item"><span class="stat-label">FRAME RATE</span><span id="stat-rate" class="stat-val mono">—</span></div>
+  <!-- Secondary PDC stats strip -->
+  <div class="status-bar" role="complementary" aria-label="System status overview">
+    <div class="stat-item"><span class="stat-label">Online Units:</span><span id="stat-online" class="stat-val mono ok">0 / 4</span></div>
+    <div class="stat-item"><span class="stat-label">Nominal Freq:</span><span class="stat-val mono">50.000 Hz</span></div>
+    <div class="stat-item"><span class="stat-label">Base Voltage:</span><span class="stat-val mono">230 V</span></div>
+    <div class="stat-item"><span class="stat-label">Last Frame:</span><span id="stat-last-frame" class="stat-val mono">—</span></div>
+    <div class="stat-item"><span class="stat-label">Sample Rate:</span><span id="stat-rate" class="stat-val mono">—</span></div>
     <div class="stat-item" style="gap:6px;">
-      <span class="stat-label">PMU</span>
+      <span class="stat-label">PMUs:</span>
       <span class="pmu-dot" id="dot-PMU_A" style="background:var(--pmu-a);" title="PMU_A"></span>
       <span class="pmu-dot" id="dot-PMU_B" style="background:var(--pmu-b);" title="PMU_B"></span>
       <span class="pmu-dot" id="dot-PMU_C" style="background:var(--pmu-c);" title="PMU_C"></span>
@@ -94,7 +110,7 @@
       </section>
 
       <section class="sidebar-section">
-        <div class="sidebar-section-title">Angular Separation vs PMU_A (Reference)</div>
+        <div class="sidebar-section-title">Angular Separation vs PMU_A</div>
         <table class="angle-table" id="angle-sep-table" aria-label="Angular separation from reference bus">
           <thead><tr><th>PMU</th><th>Δθ_V (°)</th><th>Δθ_I (°)</th><th>Δf (Hz)</th></tr></thead>
           <tbody><!-- filled by app.js --></tbody>
@@ -105,7 +121,7 @@
         <div class="sidebar-section-title">Alarm &amp; Event Log</div>
         <div class="alarm-log" id="alarm-log" role="log" aria-live="polite">
           <div class="alarm-entry level-info">
-            <span class="alarm-time" id="alarm-init-time">--:--:--</span>
+            <span class="alarm-time mono" id="alarm-init-time">--:--:--</span>
             <span class="alarm-msg">System initialized. Awaiting telemetry.</span>
           </div>
         </div>
@@ -115,7 +131,7 @@
     <!-- CONTENT AREA -->
     <div class="content-area">
 
-      <!-- 2×2 PMU Detail Cards -->
+      <!-- 2×2 PMU Detail Cards Grid -->
       <div id="pmu-cards-grid" class="pmu-cards-grid" aria-label="PMU synchrophasor detail cards">
         <!-- filled by app.js -->
       </div>
@@ -124,7 +140,7 @@
       <div class="bottom-panels">
         <section class="global-freq-panel">
           <div class="panel-header">
-            <span class="panel-title">Global Frequency — All PMUs Overlay</span>
+            <span class="panel-title">Global Frequency &bull; All PMUs Overlay</span>
             <div class="range-pills" id="global-freq-pills">
               <button class="rpill active" data-range="-15m">15m</button>
               <button class="rpill" data-range="-1h">1h</button>
@@ -162,7 +178,7 @@
        ========================================================================= -->
   <dialog id="detail-modal" aria-labelledby="modal-h2">
     <div class="modal-topbar">
-      <h2 id="modal-h2" class="mono">PMU TELEMETRY INSPECTOR</h2>
+      <h2 id="modal-h2">PMU Telemetry Inspector</h2>
       <button id="modal-close" class="modal-close" aria-label="Close inspector">&#x2715;</button>
     </div>
 
@@ -170,50 +186,50 @@
       <!-- Phasor diagram + vital blocks -->
       <div class="modal-top-row">
         <div class="modal-phasor-panel">
-          <span class="phasor-title">Phasor Diagram</span>
+          <span class="phasor-title">Phasor Polar Diagram</span>
           <div class="modal-phasor-canvas"><canvas id="modal-phasor-canvas"></canvas></div>
           <div class="phasor-legend">
-            <div class="phasor-legend-item"><span class="phasor-legend-dot" style="background:var(--cyan)"></span><span>Voltage (V)</span></div>
-            <div class="phasor-legend-item"><span class="phasor-legend-dot" style="background:var(--amber)"></span><span>Current (I)</span></div>
+            <div class="phasor-legend-item"><span class="phasor-legend-dot" style="background:var(--voltage-color)"></span><span>Voltage (V)</span></div>
+            <div class="phasor-legend-item"><span class="phasor-legend-dot" style="background:var(--current-color)"></span><span>Current (I)</span></div>
           </div>
         </div>
         <div class="modal-vitals">
           <div class="vital-block">
-            <div class="v-label">Frequency</div>
+            <div class="v-label">Grid Frequency</div>
             <div class="v-val mono" id="mv-freq">—</div>
-            <div class="v-sub" id="mv-rocof">ROCOF: — Hz/s</div>
+            <div class="v-sub mono" id="mv-rocof">ROCOF: — Hz/s</div>
           </div>
           <div class="vital-block">
             <div class="v-label">Voltage RMS</div>
             <div class="v-val mono" id="mv-vmag">—</div>
-            <div class="v-sub" id="mv-vangle">θ_V: —°</div>
+            <div class="v-sub mono" id="mv-vangle">θ_V: —°</div>
           </div>
           <div class="vital-block">
             <div class="v-label">Current RMS</div>
             <div class="v-val mono" id="mv-imag">—</div>
-            <div class="v-sub" id="mv-iangle">θ_I: —°</div>
+            <div class="v-sub mono" id="mv-iangle">θ_I: —°</div>
           </div>
           <div class="vital-block">
             <div class="v-label">Active Power P</div>
             <div class="v-val mono" id="mv-p">—</div>
-            <div class="v-sub">Real Power</div>
+            <div class="v-sub">Real Power (kW)</div>
           </div>
           <div class="vital-block">
             <div class="v-label">Reactive Power Q</div>
             <div class="v-val mono" id="mv-q">—</div>
-            <div class="v-sub">Reactive Power</div>
+            <div class="v-sub">Reactive Power (kVAR)</div>
           </div>
           <div class="vital-block">
             <div class="v-label">Power Factor</div>
             <div class="v-val mono" id="mv-pf">—</div>
-            <div class="v-sub" id="mv-s">S: — kVA</div>
+            <div class="v-sub mono" id="mv-s">S: — kVA</div>
           </div>
         </div>
       </div>
 
       <!-- Range selector -->
       <div style="display:flex;align-items:center;justify-content:space-between;">
-        <span class="mono dim" id="modal-ts" style="font-size:11px;">Frame Timestamp: —</span>
+        <span class="dim mono" id="modal-ts" style="font-size:11px;">Frame Timestamp: —</span>
         <div class="range-pills" id="modal-range-pills">
           <button class="rpill active" data-range="-15m">15m</button>
           <button class="rpill" data-range="-1h">1h</button>
@@ -230,15 +246,15 @@
           <div class="modal-chart-wrap"><canvas id="modal-chart-vi"></canvas></div>
         </div>
         <div class="modal-chart-block">
-          <div class="block-title">Phase Angle Δ (&theta;<sub>V</sub>&minus;&theta;<sub>I</sub>)</div>
+          <div class="block-title">Phase Angle Difference (&theta;<sub>V</sub> &minus; &theta;<sub>I</sub>)</div>
           <div class="modal-chart-wrap"><canvas id="modal-chart-angle"></canvas></div>
         </div>
         <div class="modal-chart-block">
-          <div class="block-title">ROCOF (Hz/s)</div>
+          <div class="block-title">Rate of Change of Frequency (ROCOF)</div>
           <div class="modal-chart-wrap"><canvas id="modal-chart-rocof"></canvas></div>
         </div>
         <div class="modal-chart-block">
-          <div class="block-title">Frequency Trend (Hz)</div>
+          <div class="block-title">Frequency History (Hz)</div>
           <div class="modal-chart-wrap"><canvas id="modal-chart-freq"></canvas></div>
         </div>
       </div>
