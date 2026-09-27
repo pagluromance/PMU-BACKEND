@@ -131,47 +131,377 @@
     <!-- CONTENT AREA -->
     <div class="content-area">
 
-      <!-- 2×2 PMU Detail Cards Grid -->
-      <div id="pmu-cards-grid" class="pmu-cards-grid" aria-label="PMU synchrophasor detail cards">
-        <!-- filled by app.js -->
-      </div>
+      <!-- ── Tab Navigation Bar ── -->
+      <nav class="tab-nav" role="tablist" aria-label="Dashboard views">
+        <button class="tab-btn active" id="tab-monitor" role="tab" aria-selected="true"  aria-controls="panel-monitor"  data-tab="monitor">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Live Monitor
+        </button>
+        <button class="tab-btn" id="tab-howitworks" role="tab" aria-selected="false" aria-controls="panel-howitworks" data-tab="howitworks">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          How It Works
+        </button>
+      </nav>
 
-      <!-- BOTTOM PANELS -->
-      <div class="bottom-panels">
-        <section class="global-freq-panel">
-          <div class="panel-header">
-            <span class="panel-title">Global Frequency &bull; All PMUs Overlay</span>
-            <div class="range-pills" id="global-freq-pills">
-              <button class="rpill active" data-range="-15m">15m</button>
-              <button class="rpill" data-range="-1h">1h</button>
-              <button class="rpill" data-range="-6h">6h</button>
-              <button class="rpill" data-range="-24h">24h</button>
+      <!-- ══════════════════════════════════════════════════════════
+           TAB PANEL 1 — LIVE MONITOR  (all existing dashboard UI)
+           ══════════════════════════════════════════════════════════ -->
+      <div id="panel-monitor" class="tab-panel active" role="tabpanel" aria-labelledby="tab-monitor">
+
+        <!-- 2×2 PMU Detail Cards Grid -->
+        <div id="pmu-cards-grid" class="pmu-cards-grid" aria-label="PMU synchrophasor detail cards">
+          <!-- filled by app.js -->
+        </div>
+
+        <!-- BOTTOM PANELS -->
+        <div class="bottom-panels">
+          <section class="global-freq-panel">
+            <div class="panel-header">
+              <span class="panel-title">Global Frequency &bull; All PMUs Overlay</span>
+              <div class="range-pills" id="global-freq-pills">
+                <button class="rpill active" data-range="-15m">15m</button>
+                <button class="rpill" data-range="-1h">1h</button>
+                <button class="rpill" data-range="-6h">6h</button>
+                <button class="rpill" data-range="-24h">24h</button>
+              </div>
+            </div>
+            <div class="panel-canvas-wrap"><canvas id="global-freq-canvas"></canvas></div>
+            <div class="pmu-legend" aria-label="PMU color legend">
+              <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-a)"></span>PMU_A</span>
+              <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-b)"></span>PMU_B</span>
+              <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-c)"></span>PMU_C</span>
+              <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-d)"></span>PMU_D</span>
+            </div>
+          </section>
+
+          <section class="global-angle-panel">
+            <div class="panel-header">
+              <span class="panel-title">Voltage Angle Separation Δθ_V (vs PMU_A)</span>
+            </div>
+            <div class="panel-canvas-wrap"><canvas id="global-angle-canvas"></canvas></div>
+            <div class="pmu-legend">
+              <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-b)"></span>PMU_B</span>
+              <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-c)"></span>PMU_C</span>
+              <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-d)"></span>PMU_D</span>
+            </div>
+          </section>
+        </div>
+
+      </div><!-- /panel-monitor -->
+
+      <!-- ══════════════════════════════════════════════════════════
+           TAB PANEL 2 — HOW IT WORKS  (Walkthrough + System Detail)
+           ══════════════════════════════════════════════════════════ -->
+      <div id="panel-howitworks" class="tab-panel" role="tabpanel" aria-labelledby="tab-howitworks" hidden>
+        <div class="hiw-page">
+
+          <!-- ─── Hero ─── -->
+          <div class="hiw-hero">
+            <div class="hiw-hero-icon" aria-hidden="true">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
+            <div>
+              <h1 class="hiw-hero-title">WAMS Synchrophasor Monitor</h1>
+              <p class="hiw-hero-sub">Wide-Area Monitoring System &mdash; IEEE C37.118.2-2011 &bull; DST-FIST MicroSmartGrid Lab</p>
             </div>
           </div>
-          <div class="panel-canvas-wrap"><canvas id="global-freq-canvas"></canvas></div>
-          <div class="pmu-legend" aria-label="PMU color legend">
-            <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-a)"></span>PMU_A</span>
-            <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-b)"></span>PMU_B</span>
-            <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-c)"></span>PMU_C</span>
-            <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-d)"></span>PMU_D</span>
-          </div>
-        </section>
 
-        <section class="global-angle-panel">
-          <div class="panel-header">
-            <span class="panel-title">Voltage Angle Separation Δθ_V (vs PMU_A)</span>
-          </div>
-          <div class="panel-canvas-wrap"><canvas id="global-angle-canvas"></canvas></div>
-          <div class="pmu-legend">
-            <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-b)"></span>PMU_B</span>
-            <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-c)"></span>PMU_C</span>
-            <span class="pmu-legend-item"><span class="pmu-legend-swatch" style="background:var(--pmu-d)"></span>PMU_D</span>
-          </div>
-        </section>
-      </div>
+          <!-- ─── Step-by-Step Walkthrough ─── -->
+          <section class="hiw-section">
+            <h2 class="hiw-section-title">System Walkthrough</h2>
+            <p class="hiw-section-desc">Follow each stage from hardware simulation to live cloud dashboard in sequence.</p>
 
-    </div>
-  </div>
+            <div class="hiw-steps">
+
+              <div class="hiw-step">
+                <div class="step-number">1</div>
+                <div class="step-body">
+                  <div class="step-title">Proteus Digital Twin Simulation</div>
+                  <div class="step-desc">A 4-bus MicroSmartGrid is simulated in <strong>Proteus ISIS</strong> using Arduino Uno firmware (<code>.hex</code>) flashed onto virtual microcontrollers. Each bus simulates a PMU: voltage phasors, current phasors, frequency, ROCOF, and power quantities are computed in real-time and printed as compact JSON to Proteus Virtual Terminal windows at 10 frames/second (100 ms period).</div>
+                  <div class="step-tags">
+                    <span class="step-tag">Proteus ISIS</span>
+                    <span class="step-tag">Arduino Uno</span>
+                    <span class="step-tag">Virtual Terminal</span>
+                    <span class="step-tag">10 Hz</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="hiw-step">
+                <div class="step-number">2</div>
+                <div class="step-body">
+                  <div class="step-title">Screen OCR Capture (<code>pmu_ocr</code>)</div>
+                  <div class="step-desc">A Python process (<code>pmu_ocr/main.py</code>) runs on the same Windows PC as Proteus. It uses <strong>mss</strong> to capture the screen region of each Virtual Terminal at 200 ms intervals. When pixel content changes, <strong>Tesseract OCR</strong> extracts the JSON text. The parser reconstructs the frame, correcting common OCR misread characters (e.g. <code>1</code>→<code>i</code>, <code>;</code>→<code>:</code>, <code>5</code>→<code>s</code>). A duplicate-frame filter rejects re-reads of the same frame.</div>
+                  <div class="step-tags">
+                    <span class="step-tag">Python 3</span>
+                    <span class="step-tag">mss (screen capture)</span>
+                    <span class="step-tag">Tesseract OCR</span>
+                    <span class="step-tag">JSON Reconstruction</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="hiw-step">
+                <div class="step-number">3</div>
+                <div class="step-body">
+                  <div class="step-title">Schema Transformation &amp; Validation</div>
+                  <div class="step-desc">The raw OCR dict (short keys: <code>id</code>, <code>seq</code>, <code>v</code>, <code>va</code>, <code>i</code>, <code>ia</code>, <code>f</code>&hellip;) is validated by <code>validator.py</code>: field presence, type coercion, frequency range (40–60 Hz), and microsecond bounds are checked. It is then transformed by <code>forwarder.py</code> into the full IEEE C37.118-aligned schema expected by the Render backend: long field names, nested objects, <code>api_key</code>, and <code>station</code> tag added.</div>
+                  <div class="step-tags">
+                    <span class="step-tag">validator.py</span>
+                    <span class="step-tag">forwarder.py</span>
+                    <span class="step-tag">Schema mapping</span>
+                    <span class="step-tag">Duplicate detection</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="hiw-step">
+                <div class="step-number">4</div>
+                <div class="step-body">
+                  <div class="step-title">HTTP POST to Render Cloud Backend</div>
+                  <div class="step-desc">Each validated frame is sent as a non-blocking daemon-thread HTTP POST to <code>https://pmu-backend-ury8.onrender.com/api/pmu-data</code> with <code>Content-Type: application/json</code>. The backend authenticates via the <code>api_key</code> field (checked against the <code>DEVICE_API_KEY</code> environment variable). Frames from all 4 PMUs arrive independently and are stored immediately to the time-series database.</div>
+                  <div class="step-tags">
+                    <span class="step-tag">HTTPS POST</span>
+                    <span class="step-tag">API Key Auth</span>
+                    <span class="step-tag">Non-blocking thread</span>
+                    <span class="step-tag">Render Cloud</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="hiw-step">
+                <div class="step-number">5</div>
+                <div class="step-body">
+                  <div class="step-title">Node.js Backend — Storage &amp; Real-Time Fanout</div>
+                  <div class="step-desc">The <strong>Node.js / Express</strong> server (<code>server.js</code>) receives the POST, validates and flattens all fields against <code>FIELD_SPEC</code> in <code>src/db.js</code>, then writes a time-series point to <strong>InfluxDB Cloud</strong> (AWS us-east-1). Simultaneously, the latest frame is broadcast to all connected browsers via <strong>Socket.IO</strong> on the <code>pmu:update</code> event. The in-memory latest-state store means the REST API (<code>/api/latest</code>) always responds with zero DB latency.</div>
+                  <div class="step-tags">
+                    <span class="step-tag">Node.js</span>
+                    <span class="step-tag">Express</span>
+                    <span class="step-tag">InfluxDB Cloud</span>
+                    <span class="step-tag">Socket.IO</span>
+                    <span class="step-tag">Render</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="hiw-step">
+                <div class="step-number">6</div>
+                <div class="step-body">
+                  <div class="step-title">Browser Dashboard — Live Rendering</div>
+                  <div class="step-desc">This dashboard (<code>public/index.html</code> + <code>app.js</code>) connects to the server via <strong>Socket.IO WebSocket</strong>. On each <code>pmu:update</code> event, the relevant PMU card is re-rendered: status badge, phasor values, frequency, power quantities, and alarm detection. Charts are fetched from <code>/api/history?pmu_id=&hellip;</code> on demand. A <strong>staleness detector</strong> runs every 5 seconds — if no frame arrives within the threshold (default 30 s), the PMU is marked STALE. Cold-start reconnect logic with exponential back-off handles Render free-tier spin-up delays.</div>
+                  <div class="step-tags">
+                    <span class="step-tag">Socket.IO WebSocket</span>
+                    <span class="step-tag">Canvas Charts</span>
+                    <span class="step-tag">Staleness Detection</span>
+                    <span class="step-tag">Cold-Start Retry</span>
+                  </div>
+                </div>
+              </div>
+
+            </div><!-- /hiw-steps -->
+          </section>
+
+          <!-- ─── Architecture Diagram ─── -->
+          <section class="hiw-section">
+            <h2 class="hiw-section-title">System Architecture</h2>
+            <div class="arch-diagram" aria-label="System architecture pipeline diagram">
+              <div class="arch-node arch-sim">
+                <div class="arch-node-icon" aria-hidden="true">⚡</div>
+                <div class="arch-node-label">Proteus<br>Simulation</div>
+                <div class="arch-node-sub">4 PMU virtual terminals<br>10 Hz JSON output</div>
+              </div>
+              <div class="arch-arrow" aria-hidden="true">
+                <div class="arch-arrow-line"></div>
+                <div class="arch-arrow-cap">OCR<br><span class="arch-arrow-detail">mss + Tesseract</span></div>
+              </div>
+              <div class="arch-node arch-ocr">
+                <div class="arch-node-icon" aria-hidden="true">🔍</div>
+                <div class="arch-node-label">OCR Collector<br><code>pmu_ocr</code></div>
+                <div class="arch-node-sub">Parse · Validate<br>Transform · Forward</div>
+              </div>
+              <div class="arch-arrow" aria-hidden="true">
+                <div class="arch-arrow-line"></div>
+                <div class="arch-arrow-cap">HTTPS POST<br><span class="arch-arrow-detail">/api/pmu-data</span></div>
+              </div>
+              <div class="arch-node arch-backend">
+                <div class="arch-node-icon" aria-hidden="true">☁</div>
+                <div class="arch-node-label">Render Backend<br><code>server.js</code></div>
+                <div class="arch-node-sub">Node.js · Express<br>InfluxDB Cloud</div>
+              </div>
+              <div class="arch-arrow" aria-hidden="true">
+                <div class="arch-arrow-line"></div>
+                <div class="arch-arrow-cap">WebSocket<br><span class="arch-arrow-detail">Socket.IO</span></div>
+              </div>
+              <div class="arch-node arch-dash">
+                <div class="arch-node-icon" aria-hidden="true">📊</div>
+                <div class="arch-node-label">This Dashboard<br><code>app.js</code></div>
+                <div class="arch-node-sub">Live cards · Charts<br>Alarms · Phasors</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ─── Two columns: API Spec + Field Reference ─── -->
+          <div class="hiw-two-col">
+
+            <!-- API Endpoints -->
+            <section class="hiw-section hiw-card">
+              <h2 class="hiw-section-title">API Endpoints</h2>
+              <table class="hiw-table" aria-label="Backend API endpoint reference">
+                <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+                <tbody>
+                  <tr><td><span class="method-badge post">POST</span></td><td class="mono">/api/pmu-data</td><td>Ingest one PMU frame (requires <code>api_key</code>)</td></tr>
+                  <tr><td><span class="method-badge get">GET</span></td><td class="mono">/api/latest</td><td>Latest frame for all 4 PMUs (in-memory, zero latency)</td></tr>
+                  <tr><td><span class="method-badge get">GET</span></td><td class="mono">/api/history</td><td>Time-series from InfluxDB (<code>?pmu_id=&range=-15m</code>)</td></tr>
+                  <tr><td><span class="method-badge get">GET</span></td><td class="mono">/health</td><td>Backend liveness check</td></tr>
+                  <tr><td><span class="method-badge ws">WS</span></td><td class="mono">/socket.io</td><td>Real-time fanout — event: <code>pmu:update</code></td></tr>
+                </tbody>
+              </table>
+            </section>
+
+            <!-- PMU Frame Schema -->
+            <section class="hiw-section hiw-card">
+              <h2 class="hiw-section-title">PMU Frame Schema (POST body)</h2>
+              <pre class="hiw-code">{
+  <span class="hl-key">"api_key"</span>:    <span class="hl-str">"&lt;DEVICE_API_KEY&gt;"</span>,
+  <span class="hl-key">"pmu_id"</span>:     <span class="hl-str">"PMU_A"</span>,
+  <span class="hl-key">"station"</span>:    <span class="hl-str">"SUBSTATION_1"</span>,
+  <span class="hl-key">"sequence"</span>:   <span class="hl-num">15234</span>,
+  <span class="hl-key">"rate_hz"</span>:    <span class="hl-num">10</span>,
+  <span class="hl-key">"timestamp"</span>:  { <span class="hl-key">"soc"</span>: <span class="hl-num">1790087541</span>, <span class="hl-key">"frac_sec_us"</span>: <span class="hl-num">125000</span> },
+  <span class="hl-key">"sync"</span>:       { <span class="hl-key">"source"</span>: <span class="hl-str">"GPS_NMEA_SIMULATED_PPS"</span>,
+                 <span class="hl-key">"locked"</span>: <span class="hl-bool">true</span>, <span class="hl-key">"pps_count"</span>: <span class="hl-num">1234</span>,
+                 <span class="hl-key">"time_quality"</span>: <span class="hl-num">3</span> },
+  <span class="hl-key">"voltage"</span>:    { <span class="hl-key">"magnitude_v"</span>: <span class="hl-num">230.17</span>, <span class="hl-key">"angle_deg"</span>: <span class="hl-num">-2.35</span> },
+  <span class="hl-key">"current"</span>:    { <span class="hl-key">"magnitude_a"</span>: <span class="hl-num">4.917</span>,  <span class="hl-key">"angle_deg"</span>: <span class="hl-num">-177.8</span> },
+  <span class="hl-key">"frequency_hz"</span>:   <span class="hl-num">50.0</span>,
+  <span class="hl-key">"rocof_hz_per_s"</span>: <span class="hl-num">0.0</span>,
+  <span class="hl-key">"power"</span>: { <span class="hl-key">"p_kw"</span>: <span class="hl-num">1.131</span>, <span class="hl-key">"q_kvar"</span>: <span class="hl-num">0.0</span>,
+             <span class="hl-key">"s_kva"</span>: <span class="hl-num">1.131</span>, <span class="hl-key">"power_factor"</span>: <span class="hl-num">1.0</span> },
+  <span class="hl-key">"status"</span>: { <span class="hl-key">"data_valid"</span>: <span class="hl-bool">true</span>, <span class="hl-key">"pmu_ok"</span>: <span class="hl-bool">true</span>,
+              <span class="hl-key">"gps_locked"</span>: <span class="hl-bool">true</span>, <span class="hl-key">"test_mode"</span>: <span class="hl-bool">false</span>,
+              <span class="hl-key">"measurement_valid"</span>: <span class="hl-bool">true</span> }
+}</pre>
+            </section>
+
+          </div><!-- /hiw-two-col -->
+
+          <!-- ─── PMU Identity Table ─── -->
+          <section class="hiw-section">
+            <h2 class="hiw-section-title">PMU Network — Node Reference</h2>
+            <table class="hiw-table hiw-pmu-table" aria-label="PMU node reference table">
+              <thead>
+                <tr><th>PMU ID</th><th>Station</th><th>Role</th><th>Color</th><th>Ref Bus</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="mono pmu-id-a">PMU_A</td>
+                  <td>SUBSTATION_1</td>
+                  <td>Primary Grid Tie — Reference Bus</td>
+                  <td><span class="color-swatch" style="background:var(--pmu-a)"></span> Blue</td>
+                  <td><span class="badge-yes">✓ Yes</span></td>
+                </tr>
+                <tr>
+                  <td class="mono pmu-id-b">PMU_B</td>
+                  <td>SUBSTATION_2</td>
+                  <td>Solar Inverter / Distributed Gen.</td>
+                  <td><span class="color-swatch" style="background:var(--pmu-b)"></span> Green</td>
+                  <td>—</td>
+                </tr>
+                <tr>
+                  <td class="mono pmu-id-c">PMU_C</td>
+                  <td>SUBSTATION_3</td>
+                  <td>Industrial Feeder</td>
+                  <td><span class="color-swatch" style="background:var(--pmu-c)"></span> Amber</td>
+                  <td>—</td>
+                </tr>
+                <tr>
+                  <td class="mono pmu-id-d">PMU_D</td>
+                  <td>SUBSTATION_4</td>
+                  <td>Microgrid Bus</td>
+                  <td><span class="color-swatch" style="background:var(--pmu-d)"></span> Purple</td>
+                  <td>—</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <!-- ─── Status Legend ─── -->
+          <section class="hiw-section">
+            <h2 class="hiw-section-title">Dashboard Status Indicators</h2>
+            <div class="hiw-status-grid">
+              <div class="hiw-status-card">
+                <span class="status-pill status-online">ONLINE</span>
+                <div class="status-card-desc">Receiving frames within the staleness threshold (default 30 s). Data is fresh and valid.</div>
+              </div>
+              <div class="hiw-status-card">
+                <span class="status-pill status-stale">STALE</span>
+                <div class="status-card-desc">Last frame was received but no new data has arrived within the threshold. PMU may be slow or network interrupted.</div>
+              </div>
+              <div class="hiw-status-card">
+                <span class="status-pill status-offline">OFFLINE</span>
+                <div class="status-card-desc">No frame ever received, or backend is unreachable. PMU device is not transmitting.</div>
+              </div>
+              <div class="hiw-status-card">
+                <span class="status-pill status-alarm">ALARM</span>
+                <div class="status-card-desc">A telemetry threshold has been breached: frequency deviation &gt;±0.5 Hz, voltage &lt;200 V or &gt;260 V, or ROCOF &gt;±1 Hz/s.</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ─── Tech Stack ─── -->
+          <section class="hiw-section">
+            <h2 class="hiw-section-title">Technology Stack</h2>
+            <div class="tech-grid">
+              <div class="tech-card">
+                <div class="tech-card-label">Simulation</div>
+                <div class="tech-card-items">
+                  <span class="tech-tag">Proteus ISIS 8</span>
+                  <span class="tech-tag">Arduino Uno firmware</span>
+                  <span class="tech-tag">Virtual Terminal Serial</span>
+                </div>
+              </div>
+              <div class="tech-card">
+                <div class="tech-card-label">OCR Pipeline</div>
+                <div class="tech-card-items">
+                  <span class="tech-tag">Python 3.14</span>
+                  <span class="tech-tag">mss (screen capture)</span>
+                  <span class="tech-tag">Tesseract OCR</span>
+                  <span class="tech-tag">OpenCV</span>
+                </div>
+              </div>
+              <div class="tech-card">
+                <div class="tech-card-label">Backend</div>
+                <div class="tech-card-items">
+                  <span class="tech-tag">Node.js 20</span>
+                  <span class="tech-tag">Express 4</span>
+                  <span class="tech-tag">Socket.IO 4</span>
+                  <span class="tech-tag">InfluxDB Cloud v2</span>
+                  <span class="tech-tag">Render (Free tier)</span>
+                </div>
+              </div>
+              <div class="tech-card">
+                <div class="tech-card-label">Frontend</div>
+                <div class="tech-card-items">
+                  <span class="tech-tag">Vanilla HTML/CSS/JS</span>
+                  <span class="tech-tag">Canvas 2D API</span>
+                  <span class="tech-tag">Inter + JetBrains Mono</span>
+                  <span class="tech-tag">Light / Dark theme</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ─── Footer ─── -->
+          <div class="hiw-footer">
+            <span>IEEE C37.118.2-2011 &bull; DST-FIST MicroSmartGrid Lab</span>
+            <span>Backend: <a href="https://pmu-backend-ury8.onrender.com/health" target="_blank" rel="noopener">pmu-backend-ury8.onrender.com</a></span>
+          </div>
+
+        </div><!-- /hiw-page -->
+      </div><!-- /panel-howitworks -->
+
+    </div><!-- /content-area -->
+  </div><!-- /main-layout -->
 
   <!-- =========================================================================
        EXPANDED PMU INSPECTOR DIALOG (IEEE C37.118 Frame Details)
@@ -270,5 +600,33 @@
   <script src="/socket.io/socket.io.js" onerror="this.onerror=null;this.src='https://cdn.socket.io/4.7.5/socket.io.min.js';"></script>
   <script src="chart.js"></script>
   <script src="app.js"></script>
+
+  <script>
+    /* ── Tab Switching ── */
+    (function () {
+      const tabs   = document.querySelectorAll('.tab-btn');
+      const panels = document.querySelectorAll('.tab-panel');
+
+      function activateTab(targetTab) {
+        tabs.forEach(t => {
+          const isActive = t.dataset.tab === targetTab;
+          t.classList.toggle('active', isActive);
+          t.setAttribute('aria-selected', isActive);
+        });
+        panels.forEach(p => {
+          const isActive = p.id === 'panel-' + targetTab;
+          p.classList.toggle('active', isActive);
+          p.hidden = !isActive;
+        });
+        try { history.replaceState(null, '', '#' + targetTab); } catch (_) {}
+      }
+
+      tabs.forEach(t => t.addEventListener('click', () => activateTab(t.dataset.tab)));
+
+      /* Restore from URL hash on load */
+      const hash = location.hash.replace('#', '');
+      if (hash && document.getElementById('panel-' + hash)) activateTab(hash);
+    }());
+  </script>
 </body>
 </html>
